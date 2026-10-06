@@ -116,6 +116,8 @@ internal static class Program
 internal sealed class CounterWindow : Form
 {
     private const string AppUrl = "https://counter.local/index.html";
+    private static readonly Color DarkSurface = Color.FromArgb(12, 9, 9);
+    private static readonly Color LightSurface = Color.FromArgb(255, 248, 247);
     private readonly WebView2 view = new WebView2();
     private readonly Label loading = new Label();
     private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 6000000 };
@@ -131,13 +133,14 @@ internal sealed class CounterWindow : Form
         MinimumSize = new Size(440, 560);
         StartPosition = FormStartPosition.CenterScreen;
         AutoScaleMode = AutoScaleMode.Dpi;
-        BackColor = Color.FromArgb(255, 248, 247);
+        BackColor = DarkSurface; // Тёмная тема по умолчанию: без белой вспышки при запуске.
         try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
         loading.Text = "Открываем счётчик…";
         loading.Font = new Font("Segoe UI", 14);
         loading.TextAlign = ContentAlignment.MiddleCenter;
         loading.Dock = DockStyle.Fill;
         loading.BackColor = BackColor;
+        loading.ForeColor = Color.FromArgb(243, 230, 228);
         view.Dock = DockStyle.Fill;
         view.DefaultBackgroundColor = BackColor;
         Controls.Add(view);
@@ -243,7 +246,10 @@ internal sealed class CounterWindow : Form
                 bool dark = data.ContainsKey("dark") && data["dark"] is bool && (bool)data["dark"];
                 int value = dark ? 1 : 0;
                 try { DwmSetWindowAttribute(Handle, 20, ref value, 4); } catch (EntryPointNotFoundException) { }
-                BackColor = dark ? Color.FromArgb(25, 17, 18) : Color.FromArgb(255, 248, 247);
+                BackColor = dark ? DarkSurface : LightSurface;
+                // Windows 11: заголовок в цвет фона и алая рамка окна. Windows 10 эти атрибуты игнорирует.
+                int caption = BackColor.R | BackColor.G << 8 | BackColor.B << 16, border = 0x0024FF;
+                try { DwmSetWindowAttribute(Handle, 35, ref caption, 4); DwmSetWindowAttribute(Handle, 34, ref border, 4); } catch (EntryPointNotFoundException) { }
                 view.DefaultBackgroundColor = BackColor;
             }
             else if (type == "clipboard" && data.ContainsKey("text"))

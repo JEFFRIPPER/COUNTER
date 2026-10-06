@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru" data-theme="light">
+<html lang="ru" data-theme="dark" data-effects="full">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -34,7 +34,7 @@
 <main class="app">
   <header class="topbar">
     <div class="brand-mark"><svg class="icon" aria-hidden="true"><use href="#i-chart"/></svg></div>
-    <div><h1>Счётчик <span class="version">2.0</span></h1><p class="subtitle">Твоя смена. Твой результат.</p></div>
+    <div><h1>Счётчик <span class="version">__COUNTER_VERSION__</span></h1><p class="subtitle">Твоя смена. Твой результат.</p></div>
     <div class="top-actions">
       <label class="profile-picker"><svg class="icon" aria-hidden="true"><use href="#i-user"/></svg><select id="profileSelect" aria-label="Профиль"></select></label>
       <button id="themeToggle" class="icon-button outlined" aria-label="Включить тёмную тему" title="Переключить тему"><svg class="icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
@@ -92,7 +92,7 @@
   <footer class="footer"><span class="saved" id="saveStatus"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><span>Сохраняется на этом компьютере</span></span><span>Ctrl+Z — отменить действие</span></footer>
 </main>
 <dialog id="actionDialog"><form class="dialog-content" id="actionForm"><h2 id="dialogTitle"></h2><p class="dialog-message" id="dialogMessage"></p><input id="dialogInput" class="dialog-input" hidden maxlength="80" aria-label="Значение"><label class="reset-option" id="resetOption" hidden><input type="checkbox" id="resetShift">Сбросить также таймер и заметки</label><div class="dialog-actions"><button type="button" id="dialogCancel">Отмена</button><button type="submit" id="dialogConfirm" class="filled">Сохранить</button></div></form></dialog>
-<dialog id="settingsDialog"><div class="dialog-content"><h2>Настройки</h2><p class="dialog-message">Профили и резервная копия</p><div class="settings-section">Профиль</div><div class="settings-actions"><button id="profileAddBtn">Создать профиль</button><button id="profileRenameBtn">Переименовать профиль</button><button id="profileDelBtn" class="danger">Удалить профиль</button></div><div class="settings-section">Данные и звук</div><div class="settings-actions"><button id="backupBtn">Сохранить резервную копию</button><button id="importBtn">Загрузить резервную копию</button><button id="soundBtn" aria-pressed="false">Звук: выключен</button></div><div class="dialog-actions"><button class="filled" id="settingsCloseBtn">Готово</button></div></div></dialog>
+<dialog id="settingsDialog"><div class="dialog-content"><h2>Настройки</h2><p class="dialog-message">Профили, резервная копия и внешний вид</p><div class="settings-section">Профиль</div><div class="settings-actions"><button id="profileAddBtn">Создать профиль</button><button id="profileRenameBtn">Переименовать профиль</button><button id="profileDelBtn" class="danger">Удалить профиль</button></div><div class="settings-section">Данные и звук</div><div class="settings-actions"><button id="backupBtn">Сохранить резервную копию</button><button id="importBtn">Загрузить резервную копию</button><button id="soundBtn" aria-pressed="false">Звук: выключен</button></div><div class="settings-section">Внешний вид</div><div class="settings-actions"><button id="effectsBtn" aria-pressed="false">Эффекты: полные</button></div><div class="dialog-actions"><button class="filled" id="settingsCloseBtn">Готово</button></div></div></dialog>
 <dialog id="historyDialog"><div class="dialog-content"><h2>История смен</h2><p class="dialog-message" id="historySubtitle"></p><div id="historyList"></div><div class="dialog-actions"><button class="filled" id="historyCloseBtn">Закрыть</button></div></div></dialog>
 <dialog id="itemDialog"><div class="dialog-content"><h2 id="itemDialogTitle"></h2><div class="settings-actions"><button id="itemEditBtn">Изменить количество</button><button id="itemDeleteBtn" class="danger">Удалить категорию</button></div><div class="dialog-actions"><button id="itemCloseBtn">Закрыть</button></div></div></dialog>
 <input type="file" id="importFile" accept="application/json,.json" hidden>
