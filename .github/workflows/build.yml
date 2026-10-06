@@ -16,23 +16,30 @@ jobs:
           node-version: '22'
       - name: Проверить расчёты
         run: node --test tests/core.test.cjs
-      - name: Проверить интерфейс
-        shell: pwsh
+      - name: Подготовить проверку интерфейса
         run: |
-          npm install --ignore-scripts --no-audit --no-fund
+          npm ci
           npx playwright install chromium
-          node tests/ui.cjs
+      - name: Проверить интерфейс
+        run: npm run test:ui
       - name: Собрать один EXE
         shell: powershell
         run: .\build.ps1
-      - name: Проверить запуск Windows-оболочки
-        shell: pwsh
+      - name: Проверить реальный EXE
+        shell: powershell
         run: |
-          Invoke-WebRequest 'https://go.microsoft.com/fwlink/p/?LinkId=2124703' -OutFile "$env:RUNNER_TEMP\WebView2Setup.exe"
-          Start-Process "$env:RUNNER_TEMP\WebView2Setup.exe" -ArgumentList '/silent /install' -Wait
-          $p = Start-Process ./dist/COUNTER.exe -ArgumentList '--smoke-test' -PassThru
-          if (!$p.WaitForExit(40000)) { $p.Kill(); throw 'Native smoke test timed out.' }
-          if ($p.ExitCode -ne 0) { throw "Native smoke test failed: $($p.ExitCode)" }
+          $runtime = Join-Path ${env:ProgramFiles(x86)} 'Microsoft\EdgeWebView\Application'
+          if (!(Test-Path $runtime)) {
+            $installer = Join-Path $env:RUNNER_TEMP 'WebView2Setup.exe'
+            Invoke-WebRequest -UseBasicParsing 'https://go.microsoft.com/fwlink/p/?LinkId=2124701' -OutFile $installer
+            $setup = Start-Process $installer -ArgumentList '/silent','/install' -Wait -PassThru
+            if ($setup.ExitCode -ne 0) { throw 'WebView2 Runtime installation failed.' }
+          }
+          $exe = (Get-ChildItem dist -Filter '*.exe' | Select-Object -First 1).FullName
+          $process = Start-Process $exe -ArgumentList '--smoke-test' -PassThru
+          if (!$process.WaitForExit(40000)) { $process.Kill(); throw 'Native smoke test timed out.' }
+          $process.Refresh()
+          if ($process.ExitCode -ne 0) { throw 'Native smoke test failed.' }
       - uses: actions/upload-artifact@v4
         with:
           name: COUNTER-V2

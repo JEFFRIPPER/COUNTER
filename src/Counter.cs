@@ -25,7 +25,7 @@ internal static class Program
     internal const string SdkVersion = "1.0.4258.31";
     internal static string DataDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "COUNTER");
     internal static bool SmokeMode;
-    internal static int ExitCode = 1;
+    internal static int SmokeExitCode = 1;
     private static readonly Dictionary<string, Assembly> Loaded = new Dictionary<string, Assembly>();
 
     [STAThread]
@@ -37,12 +37,12 @@ internal static class Program
         bool created;
         using (var mutex = new Mutex(true, "Local\\COUNTER-V2" + (SmokeMode ? ".smoke" : ""), out created))
         {
-            if (!created) { if (!SmokeMode) MessageBox.Show("Счётчик уже открыт.", "COUNTER", MessageBoxButtons.OK, MessageBoxIcon.Information); return 0; }
+            if (!created) { if (!SmokeMode) MessageBox.Show("Счётчик уже открыт.", "COUNTER", MessageBoxButtons.OK, MessageBoxIcon.Information); return SmokeMode ? 1 : 0; }
             try { Run(); }
             catch (Exception error) { if (!SmokeMode) MessageBox.Show("Не удалось открыть счётчик.\n\n" + error.Message, "COUNTER", MessageBoxButtons.OK, MessageBoxIcon.Error); }
             finally { mutex.ReleaseMutex(); }
         }
-        return SmokeMode ? ExitCode : 0;
+        return SmokeMode ? SmokeExitCode : 0;
     }
 
     private static Assembly ResolveEmbedded(object sender, ResolveEventArgs args)
@@ -114,6 +114,7 @@ internal sealed class CounterWindow : Form
     private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 6000000 };
     private CoreWebView2Environment environment;
     private readonly System.Windows.Forms.Timer smokeTimeout = new System.Windows.Forms.Timer { Interval = 25000 };
+    private int smokeStage;
 
     internal CounterWindow()
     {
@@ -134,20 +135,17 @@ internal sealed class CounterWindow : Form
         view.DefaultBackgroundColor = BackColor;
         Controls.Add(view);
         Controls.Add(loading);
-        if (Program.SmokeMode)
-        {
-            ShowInTaskbar = false;
-            smokeTimeout.Tick += delegate { smokeTimeout.Stop(); Program.ExitCode = 2; Close(); };
-            smokeTimeout.Start();
-        }
         Load += Initialize;
-        FormClosed += delegate { smokeTimeout.Dispose(); view.Dispose(); };
+        FormClosed += delegate { smokeTimeout.Stop(); smokeTimeout.Dispose(); view.Dispose(); };
+        smokeTimeout.Tick += delegate { Close(); };
+        if (Program.SmokeMode) ShowInTaskbar = false;
     }
 
     private async void Initialize(object sender, EventArgs args)
     {
         try
         {
+            if (Program.SmokeMode) smokeTimeout.Start();
             // All application files are embedded; only the browser profile and
             // the architecture-specific native loader live in LocalAppData.
             environment = await CoreWebView2Environment.CreateAsync(null, Path.Combine(Program.DataDirectory, "WebView2"));
@@ -160,35 +158,46 @@ internal sealed class CounterWindow : Form
             view.CoreWebView2.WebMessageReceived += ReceiveMessage;
             view.CoreWebView2.NavigationStarting += delegate(object source, CoreWebView2NavigationStartingEventArgs e) { e.Cancel = e.Uri != AppUrl; };
             view.CoreWebView2.NewWindowRequested += delegate(object source, CoreWebView2NewWindowRequestedEventArgs e) { e.Handled = true; };
-            view.CoreWebView2.NavigationCompleted += async delegate(object source, CoreWebView2NavigationCompletedEventArgs e)
+            view.CoreWebView2.NavigationCompleted += delegate(object source, CoreWebView2NavigationCompletedEventArgs e)
             {
-                if (e.IsSuccess) { loading.Visible = false; view.Focus(); }
+                if (e.IsSuccess) { loading.Visible = false; view.Focus(); if (Program.SmokeMode) ValidateSmoke(); }
                 else { loading.Text = "Не удалось открыть интерфейс. Закрой и снова запусти счётчик."; }
-                if (Program.SmokeMode)
-                {
-                    try
-                    {
-                        string result = await view.CoreWebView2.ExecuteScriptAsync("(() => { const rows = document.querySelectorAll('.item-row'); if (rows.length !== 8) return false; rows[0].querySelector('[data-action=plus]').click(); return document.getElementById('totalComm').textContent === '1' && localStorage.getItem('commStatsData_default') !== null; })()");
-                        Program.ExitCode = result == "true" ? 0 : 3;
-                    }
-                    catch { Program.ExitCode = 4; }
-                    smokeTimeout.Stop(); Close();
-                }
             };
             view.CoreWebView2.Navigate(AppUrl);
         }
         catch (WebView2RuntimeNotFoundException)
         {
-            if (Program.SmokeMode) { Program.ExitCode = 5; Close(); return; }
-            MessageBox.Show("Для запуска нужен Microsoft Edge WebView2 Runtime.\n\nУстанови его с официальной страницы:\nhttps://developer.microsoft.com/microsoft-edge/webview2/", "COUNTER", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (!Program.SmokeMode) MessageBox.Show("Для запуска нужен Microsoft Edge WebView2 Runtime.\n\nУстанови его с официальной страницы:\nhttps://developer.microsoft.com/microsoft-edge/webview2/", "COUNTER", MessageBoxButtons.OK, MessageBoxIcon.Information);
             Close();
         }
         catch (Exception error)
         {
-            if (Program.SmokeMode) { Program.ExitCode = 6; Close(); return; }
-            MessageBox.Show("Не удалось запустить интерфейс.\n\n" + error.Message, "COUNTER", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            if (!Program.SmokeMode) MessageBox.Show("Не удалось запустить интерфейс.\n\n" + error.Message, "COUNTER", MessageBoxButtons.OK, MessageBoxIcon.Error);
             Close();
         }
+    }
+
+    private async void ValidateSmoke()
+    {
+        try
+        {
+            if (smokeStage == 0)
+            {
+                smokeStage = 1;
+                string result = await view.CoreWebView2.ExecuteScriptAsync("(function(){if(document.querySelectorAll('.item-row').length!==8)return false;document.querySelector('[data-action=plus]').click();document.getElementById('commPlus').click();document.getElementById('startShiftBtn').click();document.getElementById('pauseShiftBtn').click();var note=document.getElementById('shiftNotes');note.value='smoke';note.dispatchEvent(new Event('input'));var d=JSON.parse(localStorage.getItem('commStatsData_default'));return document.getElementById('totalComm').textContent==='1'&&d.commCount===1&&d.status==='Пауза'&&!!d.pauseStart&&d.notes==='smoke';})()");
+                if (result != "true") { Close(); return; }
+                smokeStage = 2;
+                view.CoreWebView2.Reload();
+            }
+            else if (smokeStage == 2)
+            {
+                smokeStage = 3;
+                string result = await view.CoreWebView2.ExecuteScriptAsync("(function(){var d=JSON.parse(localStorage.getItem('commStatsData_default'));return document.getElementById('totalComm').textContent==='1'&&document.getElementById('commCount').textContent==='1'&&document.getElementById('shiftStatusText').textContent==='Пауза'&&d.notes==='smoke'&&!!d.pauseStart;})()");
+                Program.SmokeExitCode = result == "true" ? 0 : 1;
+                Close();
+            }
+        }
+        catch { Close(); }
     }
 
     private void ServeResource(object sender, CoreWebView2WebResourceRequestedEventArgs args)

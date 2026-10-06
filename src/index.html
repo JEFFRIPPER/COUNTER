@@ -120,7 +120,7 @@ dialog{border:0;padding:0;background:var(--surface-high);color:var(--on-surface)
       </section>
       <section class="card communications" aria-labelledby="commTitle">
         <div class="card-header"><h2 id="commTitle">Коммуникации</h2><svg class="icon" aria-hidden="true"><use href="#i-chart"/></svg></div>
-        <p class="subtle">Отдельный счётчик, как в первой версии</p>
+        <p class="subtle">Считается отдельно от детализации</p>
         <div class="comm-counter"><button id="commMinus" class="counter-button outlined" aria-label="Уменьшить коммуникации">−</button><span class="comm-number" id="commCount">0</span><button id="commPlus" class="counter-button plus" aria-label="Добавить коммуникацию">+</button></div>
         <div class="comm-actions"><button id="commEditBtn">Изменить</button><button id="commResetBtn">Обнулить</button></div>
       </section>
@@ -208,7 +208,7 @@ function change(fn){fn();record();beep();}
 function undo(){if(undoStates.length<2){toast('Нечего отменять');return;}undoStates.pop();const previous=C.clone(undoStates[undoStates.length-1]);state=previous.state;history=previous.history;save();render();beep();toast('Действие отменено');}
 function validName(name){return !!name&&name.length<=80;}
 function switchProfile(name){
-  current=name;const meta=profiles[name];const order=Array.isArray(meta.itemOrder)?[...meta.itemOrder]:[...C.defaults];for(const n of meta.items||[])if(!order.includes(n))order.push(n);
+  current=name;const meta=profiles[name];const order=Array.isArray(meta.itemOrder)?[...meta.itemOrder]:[...C.defaults];for(const n of Array.isArray(meta.items)?meta.items:[])if(!order.includes(n))order.push(n);
   state=C.normalize(read('commStatsData_'+name,{}),order);history=Array.isArray(meta.history)?C.clone(meta.history).filter(h=>h&&typeof h==='object'&&h.counts&&typeof h.counts==='object').slice(-30):[];
   undoStates=[snapshot()];lastGoal=C.total(state)>=140;renderProfiles();render();save();
 }
@@ -234,8 +234,8 @@ function updateTimer(){
   const dur=C.duration(state),active=state.status==='Идёт'||state.status==='Пауза';setText('shiftTimerValue',C.fmtDuration(dur));setText('shiftRemainingValue',dur>=28800000?'Сверхурочно':'Осталось '+C.fmtDuration(28800000-dur));
   setText('shiftStatusText',state.status);$('shiftStatus').dataset.state=state.status;$('startShiftBtn').disabled=active;$('pauseShiftBtn').disabled=!active;$('endShiftBtn').disabled=!active;
   $('pauseShiftBtn').innerHTML=icon(state.status==='Пауза'?'play':'pause')+'<span>'+(state.status==='Пауза'?'Продолжить':'Пауза')+'</span>';
-  const rate=dur>0?C.total(state)/(dur/3600000):null;setText('rateValue',rate===null?'—':rate.toFixed(1));
-  setText('slowHoursEl',rate===null?'Таймер не учитывает паузы':C.total(state)<=5?'Темп появится после первых коммуникаций':rate<15?'Темп ниже 15 коммуникаций / час':rate<20?'Темп: 15–20 коммуникаций / час':'Хороший темп: больше 20 / час');
+  const rate=dur>=60000?C.total(state)/(dur/3600000):null;setText('rateValue',rate===null?'—':rate.toFixed(1));
+  setText('slowHoursEl',rate===null?'Таймер не учитывает паузы':C.total(state)<=5?'Темп появится после первых коммуникаций':rate<15?'Темп ниже 15 коммуникаций / час':rate<20?'Темп: 15–20 коммуникаций / час':'Хороший темп: от 20 / час');
 }
 function render(){
   const total=C.total(state);setText('totalComm',total,true);setText('commCount',state.commCount,true);setText('effSuccess',total?Math.round((state.counts['Успешно']||0)/total*1000)/10+'%':'0%');
@@ -280,7 +280,8 @@ document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLower
 if(window.chrome?.webview)window.chrome.webview.addEventListener('message',e=>{if(e.data?.type==='toast')toast(e.data.message);});
 const legacy=read('commStatsData',null);
 if(legacy&&legacy.counts&&!read('commStatsData_default',null)){
-  const oldProfiles=read('commProfiles',{});const migrated=oldProfiles&&typeof oldProfiles==='object'&&!Array.isArray(oldProfiles)?oldProfiles:{};
+  const oldProfiles=read('commProfiles',{}),migrated=Object.create(null);
+  if(oldProfiles&&typeof oldProfiles==='object'&&!Array.isArray(oldProfiles))for(const [name,p] of Object.entries(oldProfiles))migrated[name]=p;
   migrated.default={itemOrder:Array.isArray(legacy.itemOrder)?legacy.itemOrder:Object.keys(legacy.counts),items:[],history:[]};
   write('commProfiles',JSON.stringify(migrated));write('commStatsData_default',JSON.stringify(legacy));
 }

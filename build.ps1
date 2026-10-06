@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$OutputDirectory = (Join-Path $PSScriptRoot 'dist'),
     [string]$MirrorDirectory = '',
     [switch]$Install
@@ -29,9 +29,9 @@ $resources = [ordered]@{
     'x64.WebView2Loader.dll' = (Join-Path $packageDirectory 'runtimes\win-x64\native\WebView2Loader.dll')
     'x86.WebView2Loader.dll' = (Join-Path $packageDirectory 'runtimes\win-x86\native\WebView2Loader.dll')
 }
-$compilerArguments = @('/nologo','/target:winexe','/platform:anycpu','/langversion:5','/optimize+',
+$compilerArguments = @('/nologo','/target:winexe','/platform:anycpu','/langversion:5','/codepage:65001','/optimize+',
     '/reference:System.dll','/reference:System.Core.dll','/reference:System.Drawing.dll',
-    '/reference:System.Windows.Forms.dll','/reference:System.Web.Extensions.dll',
+    '/reference:System.Windows.Forms.dll','/reference:System.Web.Extensions.dll','/reference:System.IO.Compression.dll',
     ('/reference:' + (Join-Path $packageDirectory 'lib\net462\Microsoft.Web.WebView2.Core.dll')),
     ('/reference:' + (Join-Path $packageDirectory 'lib\net462\Microsoft.Web.WebView2.WinForms.dll')),
     ('/win32manifest:' + (Join-Path $PSScriptRoot 'src\app.manifest')),
