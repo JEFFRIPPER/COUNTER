@@ -41,8 +41,8 @@ test('CSV quotes commas, newlines and quotes; formula-like labels are neutralize
   const s=C.normalize({counts:{'A,"B"\nC':3,'=1+1':1}},['A,"B"\nC','=1+1']);
   const csv=C.csv(s);
   assert.ok(csv.startsWith('\uFEFF'));
-  assert.ok(csv.includes('"A,""B""\nC","3"'));
-  assert.ok(csv.includes('"\'=1+1","1"'));
+  assert.ok(csv.includes('"A,""B""\nC";"3"'));
+  assert.ok(csv.includes('"\'=1+1";"1"'));
 });
 test('Reserved object keys are safe category names',()=>{
   const s=C.normalize({counts:JSON.parse('{"__proto__":2,"constructor":3}')},['__proto__','constructor']);
@@ -61,4 +61,15 @@ test('Clock input boundaries are validated',()=>{
   assert.equal(C.timeMinutes('23:59'),1439);
   assert.equal(C.timeMinutes('24:00'),null);
   assert.equal(C.timeMinutes('12:60'),null);
+});
+test('Schedule end is the first occurrence after the actual start, edited start clock does not shift it',()=>{
+  const s=C.normalize({status:'Идёт',startTime:new Date(2026,9,6,0,5).toISOString(),shiftStart:'22:00',shiftEnd:'06:00'},[]);
+  assert.equal(C.scheduledEnd(s),new Date(2026,9,6,6,0).getTime());
+  const night=C.normalize({status:'Идёт',startTime:new Date(2026,9,6,21,58).toISOString(),shiftEnd:'06:00'},[]);
+  assert.equal(C.scheduledEnd(night),new Date(2026,9,7,6,0).getTime());
+});
+test('Not started shift drops stale timestamps and long pauses are kept',()=>{
+  const s=C.normalize({status:'Не начата',startTime:'2026-10-06T08:00:00Z',endTime:'2026-10-06T09:00:00Z'},[]);
+  assert.equal(s.startTime,null);assert.equal(s.endTime,null);assert.equal(C.duration(s),0);
+  assert.equal(C.normalize({status:'Идёт',startTime:'2026-10-06T08:00:00Z',pausedTotal:2e9},[]).pausedTotal,2e9);
 });

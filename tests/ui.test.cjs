@@ -84,7 +84,7 @@ const html = require('../tools/bundle.cjs').bundle();
 
     const downloadEvent=page.waitForEvent('download');await page.locator('#exportCsvBtn').click();const download=await downloadEvent;
     assert.ok(download.suggestedFilename().endsWith('.csv'));
-    const csv=fs.readFileSync(await download.path(),'utf8');assert.ok(csv.includes('"Моя категория","5"'));
+    const csv=fs.readFileSync(await download.path(),'utf8');assert.ok(csv.includes('"Моя категория";"5"'));
     await page.locator('#settingsBtn').click();
     const backupEvent=page.waitForEvent('download');await page.locator('#backupBtn').click();const backup=await backupEvent;
     const backupPath=await backup.path(),copy=JSON.parse(fs.readFileSync(backupPath,'utf8'));assert.equal(copy.schema,2);

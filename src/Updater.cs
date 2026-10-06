@@ -142,6 +142,9 @@ internal static class Updater
     {
         ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
         var client = new WebClient();
+        // Корпоративный прокси: системные настройки и учётная запись Windows.
+        IWebProxy proxy = WebRequest.DefaultWebProxy;
+        if (proxy != null) { proxy.Credentials = CredentialCache.DefaultNetworkCredentials; client.Proxy = proxy; }
         client.Headers[HttpRequestHeader.UserAgent] = "COUNTER/" + Format(CurrentVersion);
         client.Headers[HttpRequestHeader.Accept] = "application/vnd.github+json, application/octet-stream";
         return client;

@@ -82,7 +82,7 @@ async function session(url, options={}) {
   check(await page.locator('html').getAttribute('data-theme')==='light','theme selection survives restart');
   const downloadPromise=page.waitForEvent('download');await page.locator('#exportCsvBtn').click();const download=await downloadPromise;
   const stream=await download.createReadStream(),parts=[];for await(const part of stream)parts.push(part);const csv=Buffer.concat(parts).toString('utf8');
-  check(csv.startsWith('\uFEFF')&&csv.includes('"__proto__","1"'),'CSV exports UTF-8 and current values');
+  check(csv.startsWith('\uFEFF')&&csv.includes('"__proto__";"1"'),'CSV exports UTF-8 and current values');
   // Keyboard focus is retained because counter rows are not recreated on each click.
   const plus=row(page,'НДЗ').locator('[data-action=plus]');await plus.focus();await page.keyboard.press('Enter');await page.keyboard.press('Enter');
   check(await plus.evaluate(el=>document.activeElement===el),'keyboard focus survives repeated increments');
