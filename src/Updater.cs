@@ -18,6 +18,8 @@ internal static class Updater
     internal const string Repository = "JEFFRIPPER/COUNTER";
     internal const string AfterUpdateArgument = "--after-update";
     internal const string DisableArgument = "--no-update-check";
+    internal static int BrowserProcessId;
+    private static bool relaunchPending;
     private const string AssetName = "COUNTER.exe";
     private const string ReleasesPage = "https://github.com/" + Repository + "/releases/latest";
 
@@ -81,8 +83,25 @@ internal static class Updater
                 "Обновление COUNTER", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
-        Process.Start(new ProcessStartInfo(ExecutablePath, AfterUpdateArgument) { UseShellExecute = false });
+        relaunchPending = true; // Новая версия стартует из Main, когда WebView2 этой копии закроется.
         owner.Close();
+    }
+
+    // Ждём выхода браузерного процесса WebView2 этой копии: иначе новая копия может
+    // подключиться к закрывающемуся процессу с той же папкой данных и не открыться.
+    internal static void RelaunchIfPending()
+    {
+        if (!relaunchPending) return;
+        if (BrowserProcessId > 0)
+        {
+            try { using (Process browser = Process.GetProcessById(BrowserProcessId)) browser.WaitForExit(5000); }
+            catch (Exception) { } // Процесс уже завершился.
+        }
+        try { Process.Start(new ProcessStartInfo(ExecutablePath, AfterUpdateArgument) { UseShellExecute = false }); }
+        catch (Exception exception)
+        {
+            MessageBox.Show("Счётчик обновлён, но не перезапустился сам.\n\nОткрой его снова.\n\n" + exception.Message, "Обновление COUNTER", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
     }
 
     private static Release FetchLatest()

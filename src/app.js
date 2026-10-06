@@ -30,7 +30,7 @@ function save(){
 function snapshot(){return C.clone({state,history});}
 function record(){undoStates.push(snapshot());if(undoStates.length>50)undoStates.shift();save();render();}
 function change(fn){fn();record();beep();}
-function undo(){if(undoStates.length<2){toast('Нечего отменять');return;}undoStates.pop();const previous=C.clone(undoStates[undoStates.length-1]);state=previous.state;history=previous.history;skipAutoFinish=C.scheduledEnd(state);save();render();beep();toast('Действие отменено');}
+function undo(){if(undoStates.length<2){toast('Нечего отменять');return;}undoStates.pop();const previous=C.clone(undoStates[undoStates.length-1]);state=previous.state;history=previous.history;const end=C.scheduledEnd(state);skipAutoFinish=end!==null&&Date.now()>=end?end:null;save();render();beep();toast('Действие отменено');}
 function validName(name){return !!name&&name.length<=80;}
 function profileKey(name){return name==='Основной'?'default':name;}
 function switchProfile(name){
