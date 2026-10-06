@@ -45,7 +45,7 @@ internal static class Program
             }
             if (!created) { if (!SmokeMode) MessageBox.Show("Счётчик уже открыт.", "COUNTER", MessageBoxButtons.OK, MessageBoxIcon.Information); return SmokeMode ? 1 : 0; }
             if (!SmokeMode) Updater.Cleanup();
-            try { Run(); }
+            try { Run(); Updater.RelaunchIfPending(); }
             catch (Exception error) { if (!SmokeMode) MessageBox.Show("Не удалось открыть счётчик.\n\n" + error.Message, "COUNTER", MessageBoxButtons.OK, MessageBoxIcon.Error); }
             finally { mutex.ReleaseMutex(); }
         }
@@ -160,6 +160,7 @@ internal sealed class CounterWindow : Form
             // the architecture-specific native loader live in LocalAppData.
             environment = await CoreWebView2Environment.CreateAsync(null, Path.Combine(Program.DataDirectory, "WebView2"));
             await view.EnsureCoreWebView2Async(environment);
+            Updater.BrowserProcessId = (int)view.CoreWebView2.BrowserProcessId;
             view.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
             view.CoreWebView2.Settings.AreDevToolsEnabled = false;
             view.CoreWebView2.Settings.AreBrowserAcceleratorKeysEnabled = false;
@@ -255,7 +256,8 @@ internal sealed class CounterWindow : Form
             else if (type == "clipboard" && data.ContainsKey("text"))
             {
                 string text = data["text"] as string;
-                if (text != null && text.Length <= 200000) { Clipboard.SetText(text); Notify("Отчёт скопирован"); }
+                // Буфер обмена бывает занят (RDP, менеджеры буфера на рабочих ПК): несколько попыток.
+                if (!string.IsNullOrEmpty(text) && text.Length <= 200000) { Clipboard.SetDataObject(text, true, 5, 100); Notify("Отчёт скопирован"); }
             }
             else if (type == "saveFile" && data.ContainsKey("content") && data.ContainsKey("name"))
             {
