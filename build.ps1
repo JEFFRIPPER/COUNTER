@@ -36,6 +36,7 @@ foreach ($part in 'styles.css','core.js','app.js') {
     $end = $html.IndexOf("`n", $start) + 1
     $html = $html.Substring(0, $start) + [IO.File]::ReadAllText((Join-Path $PSScriptRoot "src\$part"), $utf8) + $html.Substring($end)
 }
+$html = $html.Replace('__COUNTER_VERSION__', ('{0}.{1}' -f $version.Major, $version.Minor))
 $bundledHtml = Join-Path $resourceDirectory 'index.html'
 [IO.File]::WriteAllText($bundledHtml, $html, $utf8)
 $resources = [ordered]@{

@@ -84,7 +84,7 @@ const html = require('../tools/bundle.cjs').bundle();
 
     const downloadEvent=page.waitForEvent('download');await page.locator('#exportCsvBtn').click();const download=await downloadEvent;
     assert.ok(download.suggestedFilename().endsWith('.csv'));
-    const csv=fs.readFileSync(await download.path(),'utf8');assert.ok(csv.includes('"Моя категория","5"'));
+    const csv=fs.readFileSync(await download.path(),'utf8');assert.ok(csv.includes('"Моя категория";"5"'));
     await page.locator('#settingsBtn').click();
     const backupEvent=page.waitForEvent('download');await page.locator('#backupBtn').click();const backup=await backupEvent;
     const backupPath=await backup.path(),copy=JSON.parse(fs.readFileSync(backupPath,'utf8'));assert.equal(copy.schema,2);
@@ -94,13 +94,31 @@ const html = require('../tools/bundle.cjs').bundle();
     assert.equal(await count('totalComm'),6);
     console.log('PASS CSV, JSON backup and restore');
 
-    await page.locator('#themeToggle').click();
     assert.equal(await page.locator('html').getAttribute('data-theme'),'dark');
-    await page.reload();assert.equal(await page.locator('html').getAttribute('data-theme'),'dark');
-    const output=process.env.SCREENSHOT_DIRECTORY;
-    if(output){fs.mkdirSync(output,{recursive:true});await page.waitForTimeout(350);await page.screenshot({path:path.join(output,'counter-dark.png'),fullPage:true});}
     await page.locator('#themeToggle').click();
-    if(output){await page.waitForTimeout(350);await page.screenshot({path:path.join(output,'counter-light.png'),fullPage:true});}
+    await page.waitForFunction(()=>document.documentElement.dataset.theme==='light');
+    await page.reload();assert.equal(await page.locator('html').getAttribute('data-theme'),'light');
+    const output=process.env.SCREENSHOT_DIRECTORY;
+    if(output){fs.mkdirSync(output,{recursive:true});await page.waitForTimeout(350);await page.screenshot({path:path.join(output,'counter-light.png'),fullPage:true});}
+    await page.locator('#themeToggle').click();
+    if(output){await page.waitForTimeout(350);await page.screenshot({path:path.join(output,'counter-dark.png'),fullPage:true});}
+
+    await page.locator('#settingsBtn').click();
+    assert.match(await page.locator('#effectsBtn').textContent(),/^Эффекты: авто, сейчас (полные|лёгкие)$/);
+    await page.locator('#effectsBtn').click();
+    assert.equal(await page.locator('html').getAttribute('data-effects'),'full');
+    await page.locator('#effectsBtn').click();
+    assert.equal(await page.locator('html').getAttribute('data-effects'),'lite');
+    assert.equal(await page.locator('#effectsBtn').textContent(),'Эффекты: лёгкие');
+    await page.locator('#settingsCloseBtn').click();await page.reload();
+    assert.equal(await page.locator('html').getAttribute('data-effects'),'lite');
+    await page.locator('#commPlus').click();
+    assert.equal(await page.locator('.ripple').count(),0);
+    assert.equal(await page.locator('#commPlus').evaluate(el=>getComputedStyle(el).boxShadow),'none');
+    await page.locator('#settingsBtn').click();await page.locator('#effectsBtn').click();await page.locator('#settingsCloseBtn').click();
+    assert.match(await page.locator('#effectsBtn').textContent(),/^Эффекты: авто/);
+    await page.waitForTimeout(700);assert.equal(await page.locator('.ripple').count(),0);
+    console.log('PASS squad dark theme by default, light/dark and lite effects persist');
     await page.setViewportSize({width:420,height:860});
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth);
     assert.equal(overflow,false);
