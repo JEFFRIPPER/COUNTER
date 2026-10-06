@@ -1,4 +1,4 @@
-﻿param([string]$Destination = 'C:\Users\User\Desktop\COUNTER V2')
+﻿param([string]$Destination = (Join-Path ([Environment]::GetFolderPath('Desktop')) 'COUNTER V2'))
 $ErrorActionPreference = 'Stop'
 $source = [IO.Path]::GetFullPath($PSScriptRoot).TrimEnd('\')
 $target = [IO.Path]::GetFullPath($Destination).TrimEnd('\')

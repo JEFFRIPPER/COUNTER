@@ -2,6 +2,7 @@ name: Проверка и сборка COUNTER
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 permissions:
@@ -40,8 +41,43 @@ jobs:
           if (!$process.WaitForExit(40000)) { $process.Kill(); throw 'Native smoke test timed out.' }
           $process.Refresh()
           if ($process.ExitCode -ne 0) { throw 'Native smoke test failed.' }
+      - name: Сверить тег с версией
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: powershell
+        run: |
+          $version = (Get-Content -Raw package.json | ConvertFrom-Json).version
+          if ("v$version" -ne $env:GITHUB_REF_NAME) { throw "Tag $env:GITHUB_REF_NAME does not match package.json version $version." }
+      - name: Упаковать проект с EXE
+        shell: powershell
+        run: |
+          $stage = Join-Path $env:RUNNER_TEMP 'COUNTER V2'
+          git ls-files | ForEach-Object {
+            $destination = Join-Path $stage $_
+            New-Item -ItemType Directory -Path (Split-Path $destination) -Force | Out-Null
+            Copy-Item -LiteralPath $_ -Destination $destination
+          }
+          Copy-Item -LiteralPath dist -Destination $stage -Recurse -Force
+          Compress-Archive -Path $stage -DestinationPath dist\COUNTER-V2.zip -Force
       - uses: actions/upload-artifact@v4
         with:
           name: COUNTER-V2
-          path: dist/COUNTER.exe
+          path: |
+            dist/COUNTER.exe
+            dist/COUNTER.exe.sha256
+            dist/COUNTER-V2.zip
           if-no-files-found: error
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: counter
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: COUNTER-V2
+          path: dist
+      - name: Опубликовать релиз
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/COUNTER.exe dist/COUNTER.exe.sha256 dist/COUNTER-V2.zip --repo "$GITHUB_REPOSITORY" --title "COUNTER $GITHUB_REF_NAME" --generate-notes

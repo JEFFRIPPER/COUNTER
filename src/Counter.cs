@@ -17,14 +17,14 @@ using Microsoft.Web.WebView2.WinForms;
 [assembly: AssemblyTitle("COUNTER")]
 [assembly: AssemblyDescription("Счётчик коммуникаций — Material Design 3")]
 [assembly: AssemblyProduct("COUNTER")]
-[assembly: AssemblyVersion("2.0.0.0")]
-[assembly: AssemblyFileVersion("2.0.0.0")]
+// AssemblyVersion генерирует build.ps1 из версии в package.json.
 
 internal static class Program
 {
     internal const string SdkVersion = "1.0.4258.31";
     internal static string DataDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "COUNTER");
     internal static bool SmokeMode;
+    internal static bool UpdateCheck;
     internal static int SmokeExitCode = 1;
     private static readonly Dictionary<string, Assembly> Loaded = new Dictionary<string, Assembly>();
 
@@ -32,12 +32,19 @@ internal static class Program
     private static int Main(string[] args)
     {
         SmokeMode = Array.IndexOf(args, "--smoke-test") >= 0;
+        UpdateCheck = !SmokeMode && Array.IndexOf(args, Updater.DisableArgument) < 0;
         if (SmokeMode) DataDirectory = Path.Combine(Path.GetTempPath(), "COUNTER-smoke-" + Guid.NewGuid().ToString("N"));
         AppDomain.CurrentDomain.AssemblyResolve += ResolveEmbedded;
         bool created;
         using (var mutex = new Mutex(true, "Local\\COUNTER-V2" + (SmokeMode ? ".smoke" : ""), out created))
         {
+            // После обновления старая копия ещё закрывается: ждём, пока она освободит мьютекс.
+            if (!created && Array.IndexOf(args, Updater.AfterUpdateArgument) >= 0)
+            {
+                try { created = mutex.WaitOne(15000); } catch (AbandonedMutexException) { created = true; }
+            }
             if (!created) { if (!SmokeMode) MessageBox.Show("Счётчик уже открыт.", "COUNTER", MessageBoxButtons.OK, MessageBoxIcon.Information); return SmokeMode ? 1 : 0; }
+            if (!SmokeMode) Updater.Cleanup();
             try { Run(); }
             catch (Exception error) { if (!SmokeMode) MessageBox.Show("Не удалось открыть счётчик.\n\n" + error.Message, "COUNTER", MessageBoxButtons.OK, MessageBoxIcon.Error); }
             finally { mutex.ReleaseMutex(); }
@@ -118,7 +125,7 @@ internal sealed class CounterWindow : Form
 
     internal CounterWindow()
     {
-        Text = "Счётчик · COUNTER 2.0";
+        Text = "Счётчик · COUNTER " + Updater.CurrentVersion.ToString(2);
         Rectangle screen = Screen.PrimaryScreen.WorkingArea;
         ClientSize = new Size(Math.Min(1050, screen.Width - 48), Math.Min(840, screen.Height - 96));
         MinimumSize = new Size(440, 560);
@@ -160,7 +167,12 @@ internal sealed class CounterWindow : Form
             view.CoreWebView2.NewWindowRequested += delegate(object source, CoreWebView2NewWindowRequestedEventArgs e) { e.Handled = true; };
             view.CoreWebView2.NavigationCompleted += delegate(object source, CoreWebView2NavigationCompletedEventArgs e)
             {
-                if (e.IsSuccess) { loading.Visible = false; view.Focus(); if (Program.SmokeMode) ValidateSmoke(); }
+                if (e.IsSuccess)
+                {
+                    loading.Visible = false; view.Focus();
+                    if (Program.SmokeMode) ValidateSmoke();
+                    else if (Program.UpdateCheck) { Program.UpdateCheck = false; Updater.CheckInBackground(this); }
+                }
                 else { loading.Text = "Не удалось открыть интерфейс. Закрой и снова запусти счётчик."; }
             };
             view.CoreWebView2.Navigate(AppUrl);
