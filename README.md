@@ -43,7 +43,7 @@
 
 При запуске программа проверяет последний [релиз на GitHub](https://github.com/JEFFRIPPER/COUNTER/releases/latest). Если версия новее, она предлагает обновиться. После согласия скачивается `COUNTER.exe`, сверяется с `COUNTER.exe.sha256`, старый файл заменяется, и счётчик перезапускается. Данные в `%LOCALAPPDATA%\COUNTER` не затрагиваются. Без интернета проверка молча пропускается. Если в папку программы нельзя писать (например, `Program Files`), появится ссылка для ручного скачивания. Отключить проверку: запуск с `--no-update-check`.
 
-Выпуск новой версии: поднять `version` в `package.json` (и `package-lock.json`), закоммитить, затем `git tag v2.1.0 && git push origin v2.1.0`. GitHub Actions соберёт EXE, проверит, что тег совпадает с версией, и опубликует релиз с `COUNTER.exe`, `COUNTER.exe.sha256` и `COUNTER-V2.zip`. Готовый EXE больше не хранится в git.
+Выпуск новой версии: поднять `version` в `package.json` (и `package-lock.json`) и влить в `main`. Затем на GitHub: **Actions → «Проверка и сборка COUNTER» → Run workflow**, отметить «Опубликовать релиз» и нажать **Run workflow**. Другой способ: `git tag v2.1.0 && git push origin v2.1.0` (тег должен совпадать с версией). GitHub Actions соберёт и проверит EXE и опубликует релиз с `COUNTER.exe`, `COUNTER.exe.sha256` и `COUNTER-V2.zip`. Готовый EXE больше не хранится в git.
 
 ## Сборка
 

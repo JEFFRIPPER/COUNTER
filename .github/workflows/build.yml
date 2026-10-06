@@ -5,11 +5,18 @@ on:
     tags: ['v*']
   pull_request:
   workflow_dispatch:
+    inputs:
+      release:
+        description: 'Опубликовать релиз версии из package.json'
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
   counter:
     runs-on: windows-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -41,12 +48,15 @@ jobs:
           if (!$process.WaitForExit(40000)) { $process.Kill(); throw 'Native smoke test timed out.' }
           $process.Refresh()
           if ($process.ExitCode -ne 0) { throw 'Native smoke test failed.' }
-      - name: Сверить тег с версией
-        if: startsWith(github.ref, 'refs/tags/v')
-        shell: powershell
+      - name: Определить версию
+        id: version
+        shell: bash
         run: |
-          $version = (Get-Content -Raw package.json | ConvertFrom-Json).version
-          if ("v$version" -ne $env:GITHUB_REF_NAME) { throw "Tag $env:GITHUB_REF_NAME does not match package.json version $version." }
+          version=$(node -p "require('./package.json').version")
+          if [[ "$GITHUB_REF" == refs/tags/v* && "$GITHUB_REF_NAME" != "v$version" ]]; then
+            echo "Tag $GITHUB_REF_NAME does not match package.json version $version." >&2; exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
       - name: Упаковать проект с EXE
         shell: powershell
         run: |
@@ -67,7 +77,8 @@ jobs:
             dist/COUNTER-V2.zip
           if-no-files-found: error
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
+    # Релиз: тег v* или ручной запуск на main с галочкой «release».
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.release && github.ref == 'refs/heads/main')
     needs: counter
     runs-on: ubuntu-latest
     permissions:
@@ -80,4 +91,5 @@ jobs:
       - name: Опубликовать релиз
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/COUNTER.exe dist/COUNTER.exe.sha256 dist/COUNTER-V2.zip --repo "$GITHUB_REPOSITORY" --title "COUNTER $GITHUB_REF_NAME" --generate-notes
+          TAG: v${{ needs.counter.outputs.version }}
+        run: gh release create "$TAG" dist/COUNTER.exe dist/COUNTER.exe.sha256 dist/COUNTER-V2.zip --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "COUNTER $TAG" --generate-notes
