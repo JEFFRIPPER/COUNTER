@@ -22,8 +22,24 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 if (!(Test-Path (Join-Path $packageDirectory 'lib\net462\Microsoft.Web.WebView2.Core.dll'))) {
     [IO.Compression.ZipFile]::ExtractToDirectory($packagePath,$packageDirectory)
 }
+# Версия берётся из package.json; по ней работает автообновление.
+$version = [Version](Get-Content -Raw -Encoding UTF8 (Join-Path $PSScriptRoot 'package.json') | ConvertFrom-Json).version
+$utf8 = New-Object Text.UTF8Encoding($false)
+$versionSource = Join-Path $resourceDirectory 'Version.cs'
+[IO.File]::WriteAllText($versionSource, ("[assembly: System.Reflection.AssemblyVersion(`"{0}.0`")]`r`n[assembly: System.Reflection.AssemblyFileVersion(`"{0}.0`")]`r`n" -f $version), $utf8)
+# Интерфейс хранится в нескольких файлах и склеивается в один index.html, как в tools/bundle.cjs.
+$html = [IO.File]::ReadAllText((Join-Path $PSScriptRoot 'src\index.html'), $utf8)
+foreach ($part in 'styles.css','core.js','app.js') {
+    # Маркер занимает всю строку; checkout на Windows может дать CRLF.
+    $start = $html.IndexOf("@@$part@@")
+    if ($start -lt 0) { throw "Marker missing in src\index.html: $part" }
+    $end = $html.IndexOf("`n", $start) + 1
+    $html = $html.Substring(0, $start) + [IO.File]::ReadAllText((Join-Path $PSScriptRoot "src\$part"), $utf8) + $html.Substring($end)
+}
+$bundledHtml = Join-Path $resourceDirectory 'index.html'
+[IO.File]::WriteAllText($bundledHtml, $html, $utf8)
 $resources = [ordered]@{
-    'index.html' = (Join-Path $PSScriptRoot 'src\index.html')
+    'index.html' = $bundledHtml
     'Microsoft.Web.WebView2.Core.dll' = (Join-Path $packageDirectory 'lib\net462\Microsoft.Web.WebView2.Core.dll')
     'Microsoft.Web.WebView2.WinForms.dll' = (Join-Path $packageDirectory 'lib\net462\Microsoft.Web.WebView2.WinForms.dll')
     'x64.WebView2Loader.dll' = (Join-Path $packageDirectory 'runtimes\win-x64\native\WebView2Loader.dll')
@@ -51,13 +67,17 @@ if (!(Test-Path $compilerPath)) { throw '.NET Framework 4.8 is required to build
 $executablePath = Join-Path $OutputDirectory 'COUNTER.exe'
 $compilerArguments += ('/out:' + $executablePath)
 $compilerArguments += (Join-Path $PSScriptRoot 'src\Counter.cs')
+$compilerArguments += (Join-Path $PSScriptRoot 'src\Updater.cs')
+$compilerArguments += $versionSource
 & $compilerPath @compilerArguments
 if ($LASTEXITCODE -ne 0) { throw 'COUNTER compilation failed.' }
+$hash = (Get-FileHash $executablePath -Algorithm SHA256).Hash.ToLowerInvariant()
+[IO.File]::WriteAllText("$executablePath.sha256", "$hash  COUNTER.exe`n", $utf8)
 if ($MirrorDirectory) {
     New-Item -ItemType Directory -Path $MirrorDirectory -Force | Out-Null
     Copy-Item -LiteralPath $executablePath -Destination $MirrorDirectory -Force
 }
-Write-Host "Ready: $executablePath"
+Write-Host "Ready: $executablePath (version $version)"
 Write-Host ('Size: ' + [Math]::Round((Get-Item $executablePath).Length / 1KB) + ' KB; one executable, no sidecar files.')
 
 if ($Install) { & (Join-Path $PSScriptRoot 'install.ps1') }

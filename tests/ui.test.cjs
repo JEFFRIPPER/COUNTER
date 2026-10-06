@@ -6,7 +6,7 @@ const path = require('node:path');
 const http = require('node:http');
 const assert = require('node:assert/strict');
 const {chromium} = require('playwright');
-const html = fs.readFileSync(path.join(__dirname,'../src/index.html'),'utf8');
+const html = require('../tools/bundle.cjs').bundle();
 
 (async()=>{
   const server=http.createServer((req,res)=>{res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});res.end(html);});

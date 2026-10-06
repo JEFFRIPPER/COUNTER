@@ -6,10 +6,12 @@
 
 ## Скачать и запустить
 
-- [COUNTER.exe](https://github.com/JEFFRIPPER/COUNTER/raw/refs/heads/main/dist/COUNTER.exe)
-- [Весь проект](https://github.com/JEFFRIPPER/COUNTER/archive/refs/heads/main.zip)
+- [COUNTER.exe](https://github.com/JEFFRIPPER/COUNTER/releases/latest/download/COUNTER.exe)
+- [Весь проект с готовым EXE](https://github.com/JEFFRIPPER/COUNTER/releases/latest/download/COUNTER-V2.zip)
 
-Распакуй весь проект и запусти `COPY-TO-DESKTOP.cmd`. Исходники и готовая программа скопируются в **`C:\Users\User\Desktop\COUNTER V2`**. Запуск: `COUNTER V2\dist\COUNTER.exe`. Другие файлы в целевой папке не удаляются.
+Все версии: [Releases](https://github.com/JEFFRIPPER/COUNTER/releases).
+
+Распакуй весь проект и запусти `COPY-TO-DESKTOP.cmd`. Исходники и готовая программа скопируются в папку **`COUNTER V2` на рабочем столе** текущего пользователя. Запуск: `COUNTER V2\dist\COUNTER.exe`. Другие файлы в целевой папке не удаляются.
 
 Для отдельного использования достаточно скачать EXE. Нужны установленные **.NET Framework 4.8** и **[Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/)**. .NET SDK и Node.js нужны только разработчику; приложение работает без интернета. В составе нет собственного браузера: используется установленная системная среда WebView2.
 
@@ -37,6 +39,12 @@
 
 Исправлены потеря паузы после перезапуска, повреждение снимков отмены, отмена завершения без отмены записи в истории, переименование профиля и ночное расписание. Названия и заметки выводятся текстом. CSV корректно обрабатывает запятые, кавычки и переносы строк.
 
+## Обновления
+
+При запуске программа проверяет последний [релиз на GitHub](https://github.com/JEFFRIPPER/COUNTER/releases/latest). Если версия новее, она предлагает обновиться. После согласия скачивается `COUNTER.exe`, сверяется с `COUNTER.exe.sha256`, старый файл заменяется, и счётчик перезапускается. Данные в `%LOCALAPPDATA%\COUNTER` не затрагиваются. Без интернета проверка молча пропускается. Если в папку программы нельзя писать (например, `Program Files`), появится ссылка для ручного скачивания. Отключить проверку: запуск с `--no-update-check`.
+
+Выпуск новой версии: поднять `version` в `package.json` (и `package-lock.json`) и влить в `main`. Затем на GitHub: **Actions → «Проверка и сборка COUNTER» → Run workflow**, отметить «Опубликовать релиз» и нажать **Run workflow**. Другой способ: `git tag v2.1.0 && git push origin v2.1.0` (тег должен совпадать с версией). GitHub Actions соберёт и проверит EXE и опубликует релиз с `COUNTER.exe`, `COUNTER.exe.sha256` и `COUNTER-V2.zip`. Готовый EXE больше не хранится в git.
+
 ## Сборка
 
 На Windows с .NET Framework 4.8:
@@ -48,7 +56,7 @@
 Сборка с копированием только EXE в указанную папку:
 
 ```powershell
-.\build.ps1 -MirrorDirectory 'C:\Users\User\Desktop\COUNTER V2'
+.\build.ps1 -MirrorDirectory "$([Environment]::GetFolderPath('Desktop'))\COUNTER V2"
 ```
 
 Сборка и копирование всего проекта:
@@ -63,7 +71,7 @@
 .\install.ps1
 ```
 
-Скрипт сборки загружает WebView2 SDK **1.0.4258.31** с NuGet и проверяет SHA-256 пакета. HTML, обе управляемые библиотеки и загрузчики x86/x64 сжимаются и встраиваются в EXE. Управляемые библиотеки загружаются из памяти; нативный загрузчик извлекается в служебный каталог. Исходники: `src/index.html`, `src/Counter.cs`, `src/app.manifest`, `src/counter.ico`.
+Скрипт сборки загружает WebView2 SDK **1.0.4258.31** с NuGet и проверяет SHA-256 пакета. HTML, обе управляемые библиотеки и загрузчики x86/x64 сжимаются и встраиваются в EXE. Управляемые библиотеки загружаются из памяти; нативный загрузчик извлекается в служебный каталог. Исходники: `src/index.html` (разметка с маркерами `@@styles.css@@`, `@@core.js@@`, `@@app.js@@`), `src/styles.css`, `src/core.js` (расчёты), `src/app.js` (интерфейс), `src/Counter.cs`, `src/Updater.cs`, `src/app.manifest`, `src/counter.ico`. При сборке части склеиваются в один HTML; для тестов то же делает `tools/bundle.cjs` (`node tools/bundle.cjs out.html`). Версия программы берётся из `package.json`. Рядом с EXE создаётся `COUNTER.exe.sha256`.
 
 ## Проверка
 

@@ -4,7 +4,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('playwright');
-const html = fs.readFileSync(path.join(__dirname, '../src/index.html'));
+const html = require('../tools/bundle.cjs').bundle();
 const server = http.createServer((req, res) => { res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.end(html); });
 let browser, checks = 0;
 const check = (condition, description) => { assert(condition, description); checks++; console.log('PASS ' + description); };

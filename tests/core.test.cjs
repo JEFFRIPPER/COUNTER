@@ -4,10 +4,10 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const html = fs.readFileSync(path.join(__dirname,'../src/index.html'),'utf8');
+const core = fs.readFileSync(path.join(__dirname,'../src/core.js'),'utf8');
 const context = {};
 vm.createContext(context);
-vm.runInContext(html.match(/<script id="counter-core">([\s\S]*?)<\/script>/)[1],context);
+vm.runInContext(core,context);
 const C = context.CounterCore;
 
 test('Old profiles keep categories, counts, independent communications and notes',()=>{
