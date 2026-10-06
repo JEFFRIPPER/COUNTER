@@ -1,0 +1,8 @@
+*.pdb
+*.tmp
+node_modules/
+bin/
+obj/
+packages/
+test-results/
+COUNTER_V2.zip

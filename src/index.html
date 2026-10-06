@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; font-src 'none'; object-src 'none'; base-uri 'none'">
+<title>Счётчик · COUNTER</title>
+<style>
+:root {
+  color-scheme: light; --primary:#944a50; --on-primary:#fff; --primary-container:#ffdadc; --on-primary-container:#3d080f;
+  --secondary:#75565a; --secondary-container:#f7dce0; --on-secondary-container:#2b1519;
+  --surface:#fff8f7; --surface-low:#fff1f0; --surface-container:#fbe9e8; --surface-high:#f5e3e2; --surface-highest:#efdddd;
+  --on-surface:#22191a; --on-surface-variant:#554345; --outline:#897174; --outline-variant:#ddc1c3;
+  --inverse-surface:#382e2f; --inverse-on-surface:#ffedec; --success:#326947; --error:#ba1a1a;
+  --easing:cubic-bezier(.2,0,0,1); --duration:300ms; --shadow:0 5px 16px #38111412;
+}
+html[data-theme="dark"] {
+  color-scheme:dark; --primary:#ffb2b7; --on-primary:#5a1c23; --primary-container:#753339; --on-primary-container:#ffdadc;
+  --secondary:#e4bdc2; --secondary-container:#5b3f43; --on-secondary-container:#ffdade;
+  --surface:#191112; --surface-low:#22191a; --surface-container:#271d1e; --surface-high:#322728; --surface-highest:#3d3233;
+  --on-surface:#f2dede; --on-surface-variant:#ddc1c3; --outline:#a78b8e; --outline-variant:#554345;
+  --inverse-surface:#f2dede; --inverse-on-surface:#382e2f; --success:#a2d2ac; --error:#ffb4ab; --shadow:0 5px 16px #0002;
+}
+*{box-sizing:border-box} [hidden]{display:none!important}
+body{margin:0;background:var(--surface);color:var(--on-surface);font:14px/1.5 "Segoe UI Variable","Segoe UI",Arial,sans-serif;transition:background var(--duration) var(--easing),color var(--duration) var(--easing)}
+button,input,select,textarea{font:inherit} button{cursor:pointer;position:relative;isolation:isolate;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;min-height:40px;padding:0 20px;border-radius:22px;color:var(--on-surface-variant);background:transparent;font-weight:600;white-space:nowrap;transition:background 180ms var(--easing),box-shadow 180ms var(--easing),border-radius 250ms var(--easing)}
+button::before{content:"";position:absolute;inset:0;background:currentColor;opacity:0;pointer-events:none;z-index:-1;transition:opacity 150ms} button:hover::before{opacity:.08} button:active::before{opacity:.12}
+button:disabled{opacity:.38;cursor:default} button:disabled::before{opacity:0} :focus-visible{outline:3px solid var(--primary);outline-offset:3px}
+.filled{background:var(--primary);color:var(--on-primary)} .tonal{background:var(--secondary-container);color:var(--on-secondary-container)} .outlined{box-shadow:inset 0 0 0 1px var(--outline-variant)} .danger{color:var(--error)}
+.icon-button{width:40px;padding:0;flex:none}.icon{width:20px;height:20px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ripple{position:absolute;pointer-events:none;border-radius:50%;background:currentColor;opacity:.15;transform:scale(0);animation:ripple 550ms var(--easing) forwards;z-index:-1}
+@keyframes ripple{to{transform:scale(1);opacity:0}}
+.app{max-width:1136px;margin:auto;padding:28px 28px 20px}.topbar{display:flex;align-items:center;gap:12px;margin-bottom:26px}.brand-mark{width:46px;height:46px;border-radius:16px;background:var(--primary-container);color:var(--on-primary-container);display:grid;place-items:center}.brand-mark .icon{width:26px;height:26px}
+h1{font-size:26px;letter-spacing:-.7px;line-height:1.2;margin:0;font-weight:650}.subtitle{color:var(--on-surface-variant);font-size:12px;margin:5px 0 0}.top-actions{margin-left:auto;display:flex;align-items:center;gap:8px}.version{font-size:11px;letter-spacing:.2px;background:var(--surface-high);padding:4px 9px;border-radius:8px;color:var(--on-surface-variant);margin-left:2px}
+.profile-picker{height:42px;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--surface-container);border-radius:16px}.profile-picker .icon{width:18px}.profile-picker select{width:138px;border:0;background:transparent;color:var(--on-surface);cursor:pointer;outline-offset:0;padding:7px 3px;font-size:13px}option{background:var(--surface-high);color:var(--on-surface)}
+.dashboard{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(300px,1fr);gap:18px;align-items:start}.main-column,.side-column{display:grid;gap:18px}.card{background:var(--surface-low);border-radius:28px;padding:24px}.card-header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}.card-header h2,h2{font-size:18px;letter-spacing:-.3px;line-height:1.4;margin:0;font-weight:600}.eyebrow{font-size:12px;font-weight:600;color:var(--on-surface-variant)}
+.overview{background:var(--primary-container);color:var(--on-primary-container);padding-bottom:22px;position:relative;overflow:hidden}.overview .eyebrow,.overview .subtle{color:var(--on-primary-container);opacity:.76}.overview .hero-row{display:flex;align-items:end;justify-content:space-between;gap:24px;margin:5px 0 23px}.hero-number{font-size:72px;line-height:1;letter-spacing:-4px;font-weight:650;font-variant-numeric:tabular-nums;display:inline-block}.hero-caption{font-size:13px;margin-top:6px}.hero-meta{display:grid;gap:14px;min-width:128px;padding-bottom:3px}.metric{display:flex;align-items:center;gap:10px}.metric strong{display:block;font-size:20px;font-variant-numeric:tabular-nums;line-height:1.15;font-weight:650}.metric small{font-size:11px;opacity:.76}.metric-icon{background:#ffffff20;border-radius:12px;width:36px;height:36px;display:grid;place-items:center}
+.progress-label{display:flex;justify-content:space-between;gap:12px;font-size:12px;margin-bottom:9px}.progress-track{height:8px;border-radius:9px;background:color-mix(in srgb,var(--on-primary-container) 12%,transparent);overflow:hidden}.progress-fill{height:100%;width:0;border-radius:9px;background:var(--primary);transition:width 600ms var(--easing)}.goal-note{font-size:11px;opacity:.75;margin-top:9px}
+.detail-card{padding:22px 20px 14px}.detail-card .card-header{padding:0 4px;margin-bottom:10px}.detail-card .card-header button{min-height:34px;padding:0 12px;font-size:12px}.item-row{display:flex;align-items:center;gap:10px;min-height:62px;border-bottom:1px solid var(--outline-variant);position:relative;border-radius:12px;padding:7px 3px;transition:background 180ms}.item-row:last-child{border:0}.item-row.dragging{opacity:.35}.item-row.drag-over{background:var(--primary-container)}.drag-handle{width:14px;cursor:grab;color:var(--outline);display:flex;flex:none}.drag-handle .icon{width:14px;height:20px}.item-name{flex:1;min-width:0;overflow-wrap:anywhere;font-weight:550;font-size:14px}.item-controls{display:flex;gap:4px;align-items:center}.item-count{min-width:44px;text-align:center;font-size:23px;line-height:1.2;font-weight:600;font-variant-numeric:tabular-nums;display:inline-block}.counter-button{width:38px;height:38px;padding:0;border-radius:13px;font-size:24px;font-weight:400;min-height:38px}.counter-button.plus{background:var(--primary-container);color:var(--on-primary-container)}.item-menu{width:30px;padding:0;min-height:38px}
+.shift-card{padding:24px}.status{display:inline-flex;gap:6px;align-items:center;border-radius:10px;padding:5px 9px;background:var(--surface-high);font-size:11px;white-space:nowrap;font-weight:600}.status-dot{width:6px;height:6px;border-radius:50%;background:var(--outline)}.status[data-state="Идёт"]{color:var(--success)}.status[data-state="Идёт"] .status-dot{background:var(--success)}.status[data-state="Пауза"]{background:var(--secondary-container);color:var(--on-secondary-container)}.status[data-state="Пауза"] .status-dot{background:var(--primary)}
+.timer{font-size:42px;letter-spacing:-1.8px;font-weight:550;line-height:1.3;font-variant-numeric:tabular-nums;margin:7px 0 2px}.remaining{font-size:12px;color:var(--on-surface-variant)}.shift-actions{display:flex;gap:8px;margin:22px 0 20px}.shift-actions .filled{flex:1}.shift-actions button{padding:0 14px;font-size:12px}.schedule{display:flex;gap:12px;margin-top:18px}.field{display:flex;flex-direction:column;gap:5px;color:var(--on-surface-variant);font-size:11px;flex:1;min-width:0}.field input,.field textarea{width:100%;border:1px solid var(--outline-variant);border-radius:12px;background:transparent;color:var(--on-surface);padding:10px 12px;font-size:14px;outline-offset:1px}.field input:focus,.field textarea:focus{border-color:var(--primary)}.field input[type=time]{min-height:42px}.notes-field{margin-top:15px}.field textarea{resize:vertical;min-height:74px;max-height:250px;line-height:1.5}.rate-note{font-size:11px;color:var(--on-surface-variant);margin-top:12px;min-height:17px}
+.communications{background:var(--surface-container)}.communications .card-header{margin-bottom:12px}.subtle{font-size:12px;color:var(--on-surface-variant);margin:0}.comm-counter{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px}.comm-counter .counter-button{width:46px;height:46px;border-radius:16px;min-height:46px}.comm-number{font-size:44px;line-height:1.2;font-weight:600;letter-spacing:-1px;display:inline-block;font-variant-numeric:tabular-nums}.comm-actions{display:flex;justify-content:flex-end;gap:4px;margin-top:10px}.comm-actions button{min-height:32px;padding:0 10px;font-size:11px}
+.bottom-actions{display:flex;flex-wrap:wrap;gap:8px;padding:0 4px}.bottom-actions button{font-size:12px;padding:0 13px;min-height:38px}.report{margin-top:18px;padding:16px 20px;border:1px solid var(--outline-variant);border-radius:18px}.report summary{cursor:pointer;color:var(--on-surface-variant);font-size:12px;font-weight:550}.report pre{font:12px/1.8 "Segoe UI",sans-serif;white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0 0}.footer{display:flex;align-items:center;justify-content:space-between;margin-top:20px;font-size:11px;color:var(--on-surface-variant);padding:0 6px;gap:8px}.footer .saved{display:flex;align-items:center;gap:5px}.footer .icon{width:13px;height:13px}
+dialog{border:0;padding:0;background:var(--surface-high);color:var(--on-surface);border-radius:28px;width:460px;max-width:calc(100vw - 32px);max-height:85vh;box-shadow:0 18px 50px #0003;overflow:auto}dialog::backdrop{background:#21101670;backdrop-filter:blur(3px)}.dialog-content{padding:28px}.dialog-content h2{font-size:22px;margin-bottom:12px}.dialog-message{font-size:14px;color:var(--on-surface-variant);white-space:pre-line;margin:0 0 20px;overflow-wrap:anywhere}.dialog-input{width:100%;border:1px solid var(--outline);border-radius:12px;padding:13px 16px;background:var(--surface-low);color:var(--on-surface);margin:0 0 12px}.dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:22px}.reset-option{display:flex;gap:10px;align-items:center;font-size:13px;color:var(--on-surface-variant);margin-top:6px}.reset-option input{accent-color:var(--primary);width:18px;height:18px}.settings-actions{display:grid;gap:8px}.settings-actions button{justify-content:flex-start;padding:0 14px;min-height:44px;background:var(--surface-container)}.settings-section{font-size:11px;color:var(--on-surface-variant);margin:14px 2px 6px}.history-item{display:block;text-align:left;width:100%;border-radius:18px;padding:15px 16px;min-height:74px;background:var(--surface-container);margin-top:8px;white-space:normal}.history-item small{display:block;color:var(--on-surface-variant);font-size:11px;font-weight:400}.history-item strong{display:block;font-size:14px;margin:3px 0}.empty{padding:28px 12px;text-align:center;color:var(--on-surface-variant);font-size:13px}.snackbar{position:fixed;left:50%;bottom:24px;max-width:calc(100vw - 32px);transform:translate(-50%,18px);opacity:0;background:var(--inverse-surface);color:var(--inverse-on-surface);box-shadow:var(--shadow);border-radius:16px;padding:14px 22px;font-size:13px;z-index:100;pointer-events:none;transition:transform 300ms var(--easing),opacity 200ms}.snackbar.show{opacity:1;transform:translate(-50%,0)}
+.celebration{position:fixed;pointer-events:none;width:7px;height:12px;border-radius:2px;z-index:90}.icon-defs{position:absolute;width:0;height:0;overflow:hidden}
+@media(max-width:800px){.app{padding:20px}.dashboard{grid-template-columns:minmax(0,1.25fr) minmax(280px,1fr);gap:14px}.card{padding:20px}.hero-number{font-size:64px}.hero-meta{min-width:94px}.hero-row{gap:10px!important}.topbar{gap:9px}.profile-picker select{width:110px}.subtitle{font-size:11px}.version{display:none}.timer{font-size:36px}.detail-card{padding:20px 14px 12px}}
+@media(max-width:640px){.app{padding:18px 14px}.topbar{flex-wrap:wrap;margin-bottom:18px}.top-actions{width:100%;margin:10px 0 0}.profile-picker{flex:1}.profile-picker select{width:100%}.dashboard{grid-template-columns:1fr}.side-column{grid-row:2}.hero-number{font-size:72px}.card{padding:22px}.detail-card{padding:22px 16px 12px}.hero-meta{min-width:128px}.footer span:last-child{display:none}.timer{font-size:44px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}.ripple,.celebration{display:none}}
+</style>
+</head>
+<body>
+<svg class="icon-defs" aria-hidden="true"><defs>
+<symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 19V5m0 14h16M8 15v-4m5 4V7m5 8v-6"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.3"/><path d="M5 20v-2a7 7 0 0 1 14 0v2"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.4 1.4m11.2 11.2L19 19M5 19l1.4-1.4M17.6 6.4 19 5"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 14.2A9 9 0 0 1 9.8 3a9 9 0 1 0 11.2 11.2Z"/></symbol>
+<symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2" fill="var(--surface)"/><circle cx="16" cy="12" r="2" fill="var(--surface)"/><circle cx="10" cy="18" r="2" fill="var(--surface)"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+<symbol id="i-trend" viewBox="0 0 24 24"><path d="m3 17 6-6 4 4 8-10m-6 0h6v6"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7Z" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14" stroke-width="3"/></symbol>
+<symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/></symbol>
+<symbol id="i-history" viewBox="0 0 24 24"><path d="M3 10a9 9 0 1 1 1 7M3 4v6h6m3-3v5l4 2"/></symbol>
+<symbol id="i-undo" viewBox="0 0 24 24"><path d="m9 4-6 6 6 6M3 10h11a6 6 0 0 1 0 12"/></symbol>
+<symbol id="i-reset" viewBox="0 0 24 24"><path d="M20 8A9 9 0 1 0 21 15M20 3v5h-5"/></symbol>
+<symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="19" r="1" fill="currentColor"/></symbol>
+<symbol id="i-drag" viewBox="0 0 24 24"><path d="M8 5h.1M16 5h.1M8 12h.1M16 12h.1M8 19h.1M16 19h.1" stroke-width="3"/></symbol>
+</defs></svg>
+<main class="app">
+  <header class="topbar">
+    <div class="brand-mark"><svg class="icon" aria-hidden="true"><use href="#i-chart"/></svg></div>
+    <div><h1>Счётчик <span class="version">2.0</span></h1><p class="subtitle">Твоя смена. Твой результат.</p></div>
+    <div class="top-actions">
+      <label class="profile-picker"><svg class="icon" aria-hidden="true"><use href="#i-user"/></svg><select id="profileSelect" aria-label="Профиль"></select></label>
+      <button id="themeToggle" class="icon-button outlined" aria-label="Включить тёмную тему" title="Переключить тему"><svg class="icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+      <button id="settingsBtn" class="icon-button outlined" aria-label="Настройки и профили" title="Настройки и профили"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg></button>
+    </div>
+  </header>
+  <div class="dashboard">
+    <div class="main-column">
+      <section class="card overview" aria-labelledby="overviewTitle">
+        <div class="eyebrow" id="overviewTitle">Всего коммуникаций</div>
+        <div class="hero-row"><div><span class="hero-number" id="totalComm">0</span><div class="hero-caption">за текущую смену</div></div>
+          <div class="hero-meta">
+            <div class="metric"><span class="metric-icon"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span><div><strong id="effSuccess">0%</strong><small>успешность</small></div></div>
+            <div class="metric"><span class="metric-icon"><svg class="icon" aria-hidden="true"><use href="#i-trend"/></svg></span><div><strong id="rateValue">—</strong><small>в среднем / час</small></div></div>
+          </div>
+        </div>
+        <div class="progress-label"><span id="effProgressLabel">Цель · 0 / 140</span><strong id="effPercent">0%</strong></div>
+        <div class="progress-track" id="goalProgress" role="progressbar" aria-label="Выполнение цели" aria-valuemin="0" aria-valuemax="140" aria-valuenow="0"><div class="progress-fill" id="effProgressFill"></div></div>
+        <div class="goal-note" id="effTarget">Осталось 140 коммуникаций</div>
+      </section>
+      <section class="card detail-card" aria-labelledby="detailsTitle">
+        <div class="card-header"><h2 id="detailsTitle">Детализация</h2><button id="addBtn"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Категория</button></div>
+        <div id="itemsContainer"></div>
+      </section>
+      <div class="bottom-actions">
+        <button id="copyBtn" class="filled"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg>Копировать</button>
+        <button id="exportCsvBtn" class="tonal"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>CSV</button>
+        <button id="undoBtn" class="outlined" title="Ctrl+Z"><svg class="icon" aria-hidden="true"><use href="#i-undo"/></svg>Отмена</button>
+        <button id="resetBtn" class="outlined"><svg class="icon" aria-hidden="true"><use href="#i-reset"/></svg>Сброс</button>
+      </div>
+    </div>
+    <div class="side-column">
+      <section class="card shift-card" aria-labelledby="shiftTitle">
+        <div class="card-header"><h2 id="shiftTitle">Смена</h2><span class="status" id="shiftStatus" data-state="Не начата"><span class="status-dot"></span><span id="shiftStatusText">Не начата</span></span></div>
+        <div class="timer" id="shiftTimerValue">00:00:00</div><div class="remaining" id="shiftRemainingValue">Осталось 08:00:00</div>
+        <div class="shift-actions">
+          <button id="startShiftBtn" class="filled"><svg class="icon" aria-hidden="true"><use href="#i-play"/></svg>Начать</button>
+          <button id="pauseShiftBtn" class="tonal" disabled><svg class="icon" aria-hidden="true"><use href="#i-pause"/></svg><span>Пауза</span></button>
+          <button id="endShiftBtn" class="icon-button outlined" aria-label="Завершить смену" title="Завершить смену" disabled><svg class="icon" aria-hidden="true"><use href="#i-stop"/></svg></button>
+        </div>
+        <div class="schedule"><label class="field">Начало<input type="time" id="shiftStart" aria-label="Время начала смены"></label><label class="field">Конец по расписанию<input type="time" id="shiftEnd" aria-label="Время конца смены"></label></div>
+        <label class="field notes-field">Заметки<textarea id="shiftNotes" placeholder="Что важно не забыть…" maxlength="2000"></textarea></label>
+        <div class="rate-note" id="slowHoursEl"></div>
+      </section>
+      <section class="card communications" aria-labelledby="commTitle">
+        <div class="card-header"><h2 id="commTitle">Коммуникации</h2><svg class="icon" aria-hidden="true"><use href="#i-chart"/></svg></div>
+        <p class="subtle">Отдельный счётчик, как в первой версии</p>
+        <div class="comm-counter"><button id="commMinus" class="counter-button outlined" aria-label="Уменьшить коммуникации">−</button><span class="comm-number" id="commCount">0</span><button id="commPlus" class="counter-button plus" aria-label="Добавить коммуникацию">+</button></div>
+        <div class="comm-actions"><button id="commEditBtn">Изменить</button><button id="commResetBtn">Обнулить</button></div>
+      </section>
+      <button id="historyBtn" class="tonal"><svg class="icon" aria-hidden="true"><use href="#i-history"/></svg>История смен</button>
+    </div>
+  </div>
+  <details class="report"><summary>Текст отчёта</summary><pre id="statsView"></pre></details>
+  <footer class="footer"><span class="saved" id="saveStatus"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><span>Сохраняется на этом компьютере</span></span><span>Ctrl+Z — отменить действие</span></footer>
+</main>
+<dialog id="actionDialog"><form class="dialog-content" id="actionForm"><h2 id="dialogTitle"></h2><p class="dialog-message" id="dialogMessage"></p><input id="dialogInput" class="dialog-input" hidden maxlength="80" aria-label="Значение"><label class="reset-option" id="resetOption" hidden><input type="checkbox" id="resetShift">Сбросить также таймер и заметки</label><div class="dialog-actions"><button type="button" id="dialogCancel">Отмена</button><button type="submit" id="dialogConfirm" class="filled">Сохранить</button></div></form></dialog>
+<dialog id="settingsDialog"><div class="dialog-content"><h2>Настройки</h2><p class="dialog-message">Профили и резервная копия</p><div class="settings-section">Профиль</div><div class="settings-actions"><button id="profileAddBtn">Создать профиль</button><button id="profileRenameBtn">Переименовать профиль</button><button id="profileDelBtn" class="danger">Удалить профиль</button></div><div class="settings-section">Данные и звук</div><div class="settings-actions"><button id="backupBtn">Сохранить резервную копию</button><button id="importBtn">Загрузить резервную копию</button><button id="soundBtn" aria-pressed="false">Звук: выключен</button></div><div class="dialog-actions"><button class="filled" id="settingsCloseBtn">Готово</button></div></div></dialog>
+<dialog id="historyDialog"><div class="dialog-content"><h2>История смен</h2><p class="dialog-message" id="historySubtitle"></p><div id="historyList"></div><div class="dialog-actions"><button class="filled" id="historyCloseBtn">Закрыть</button></div></div></dialog>
+<dialog id="itemDialog"><div class="dialog-content"><h2 id="itemDialogTitle"></h2><div class="settings-actions"><button id="itemEditBtn">Изменить количество</button><button id="itemDeleteBtn" class="danger">Удалить категорию</button></div><div class="dialog-actions"><button id="itemCloseBtn">Закрыть</button></div></div></dialog>
+<input type="file" id="importFile" accept="application/json,.json" hidden>
+<div class="snackbar" id="toast" role="status" aria-live="polite"></div>
+<script id="counter-core">
+(function(root) {
+  'use strict';
+  const defaults=['НДЗ','Перезвон','Успешно','Отказ','VIP','Блокировка','Сам','Трансфер'];
+  const clone=x=>JSON.parse(JSON.stringify(x));
+  const number=x=>Number.isSafeInteger(Number(x))&&Number(x)>=0&&Number(x)<=1e9?Number(x):0;
+  const stamp=x=>x!=null&&Number.isFinite(new Date(x).getTime())?new Date(x).toISOString():null;
+  function timeMinutes(v){const m=/^(\d{1,2}):(\d{2})$/.exec(String(v));return m&&+m[1]<24&&+m[2]<60?+m[1]*60+(+m[2]):null;}
+  function normalize(raw={},order=defaults,now=Date.now()){
+    if(!raw||typeof raw!=='object')raw={};
+    const names=[...new Set((Array.isArray(order)?order:defaults).filter(x=>typeof x==='string'&&x.trim()&&x.length<=80))].slice(0,100);
+    const counts=Object.create(null);for(const n of names)counts[n]=number(raw.counts&&raw.counts[n]);
+    const startTime=stamp(raw.startTime),endTime=stamp(raw.endTime);
+    let status=['Идёт','Пауза','Завершена'].includes(raw.status)&&startTime?raw.status:'Не начата';
+    if(status==='Завершена'&&!endTime)status='Не начата';
+    return {itemOrder:names,counts,commCount:number(raw.commCount),shiftStart:timeMinutes(raw.shiftStart)!==null?raw.shiftStart:'',shiftEnd:timeMinutes(raw.shiftEnd)!==null?raw.shiftEnd:'',startTime,endTime,status,notes:typeof raw.notes==='string'?raw.notes.slice(0,2000):'',pausedTotal:number(raw.pausedTotal),pauseStart:status==='Пауза'?(stamp(raw.pauseStart)||new Date(now).toISOString()):null};
+  }
+  function total(s){return s.itemOrder.reduce((n,k)=>n+number(s.counts[k]),0);}
+  function duration(s,now=Date.now()){
+    if(!s.startTime)return 0;
+    const finish=s.status==='Пауза'&&s.pauseStart?new Date(s.pauseStart).getTime():s.endTime?new Date(s.endTime).getTime():now;
+    return Math.max(0,finish-new Date(s.startTime).getTime()-s.pausedTotal);
+  }
+  function scheduledEnd(s){
+    const minutes=timeMinutes(s.shiftEnd);if(minutes===null||!s.startTime)return null;
+    const start=new Date(s.startTime),end=new Date(start);end.setHours(Math.floor(minutes/60),minutes%60,0,0);
+    const clockStart=timeMinutes(s.shiftStart);const startMinutes=clockStart===null?start.getHours()*60+start.getMinutes():clockStart;
+    if(minutes<=startMinutes)end.setDate(end.getDate()+1);return end.getTime();
+  }
+  function fmtDuration(ms){const s=Math.max(0,Math.floor(ms/1000));return [Math.floor(s/3600),Math.floor(s%3600/60),s%60].map(x=>String(x).padStart(2,'0')).join(':');}
+  const fmtTime=d=>[d.getHours(),d.getMinutes()].map(x=>String(x).padStart(2,'0')).join(':');
+  function csvCell(x){let v=String(x);if(/^[\s]*[=+\-@]/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"';}
+  function csv(s){return '\uFEFF'+[['Тип','Количество'],...s.itemOrder.map(n=>[n,s.counts[n]]),['Всего',total(s)],['Коммуникации',s.commCount]].map(row=>row.map(csvCell).join(',')).join('\r\n')+'\r\n';}
+  root.CounterCore={defaults,clone,number,normalize,total,duration,scheduledEnd,timeMinutes,fmtDuration,fmtTime,csv};
+})(typeof window==='undefined'?globalThis:window);
+</script>
+<script>
+(function(){
+'use strict';
+const C=CounterCore,$=id=>document.getElementById(id),own=(obj,key)=>Object.prototype.hasOwnProperty.call(obj,key),reduced=matchMedia('(prefers-reduced-motion: reduce)');
+let profiles=Object.create(null),current='default',state,history=[],undoStates=[],storageOK=true,sound=false,audio=null,dialogResolve=null,itemSelected=null,lastGoal=false;
+function read(key,fallback){try{const text=localStorage.getItem(key);return text===null?fallback:JSON.parse(text);}catch{return fallback;}}
+function write(key,value){try{localStorage.setItem(key,value);return true;}catch{return false;}}
+function toast(message,ms=2400){$('toast').textContent=message;$('toast').classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('toast').classList.remove('show'),ms);}
+function icon(name){return '<svg class="icon" aria-hidden="true"><use href="#i-'+name+'"/></svg>';}
+function spring(el){if(reduced.matches||!el.animate)return;el.getAnimations().forEach(a=>a.cancel());el.animate([{transform:'scale(.88)',offset:0},{transform:'scale(1.055)',offset:.45},{transform:'scale(.99)',offset:.7},{transform:'scale(1)',offset:1}],{duration:340,easing:'cubic-bezier(.2,0,0,1)'});}
+function setText(id,value,animate=false){const el=$(id),text=String(value);if(el.textContent!==text){el.textContent=text;if(animate)spring(el);}}
+function showDialog(id){const el=$(id);el.showModal();if(!reduced.matches)el.animate([{opacity:0,transform:'translateY(18px) scale(.96)'},{opacity:1,transform:'translateY(0) scale(1)'}],{duration:300,easing:'cubic-bezier(.2,0,0,1)'});}
+function ask(title,message,options={}){
+  if(dialogResolve)return Promise.resolve(null);
+  $('dialogTitle').textContent=title;$('dialogMessage').textContent=message;
+  const input=$('dialogInput');input.hidden=!options.input;input.type=options.type||'text';input.value=options.value==null?'':options.value;input.required=!!options.input;
+  input.maxLength=options.type==='number'?10:80;if(options.type==='number'){input.min='0';input.max='1000000000';input.step='1';}else{input.removeAttribute('min');input.removeAttribute('max');input.removeAttribute('step');}
+  $('resetOption').hidden=!options.reset;$('resetShift').checked=false;$('dialogConfirm').textContent=options.confirm||(options.input?'Сохранить':'Подтвердить');
+  showDialog('actionDialog');if(options.input){input.focus();input.select();}
+  return new Promise(resolve=>{dialogResolve={resolve,options};});
+}
+function settleDialog(confirmed){if(!dialogResolve)return;const {resolve,options}=dialogResolve;dialogResolve=null;const value=!confirmed?null:options.input?$('dialogInput').value.trim():options.reset?{resetShift:$('resetShift').checked}:true;$('actionDialog').close();resolve(value);}
+$('actionForm').addEventListener('submit',e=>{e.preventDefault();if($('actionForm').reportValidity())settleDialog(true);});$('dialogCancel').onclick=()=>settleDialog(false);$('actionDialog').addEventListener('cancel',e=>{e.preventDefault();settleDialog(false);});
+document.querySelectorAll('dialog').forEach(el=>el.addEventListener('click',e=>{if(e.target!==el)return;const r=el.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom){if(el.id==='actionDialog')settleDialog(false);else el.close();}}));
+function save(){
+  const meta=profiles[current];meta.itemOrder=[...state.itemOrder];meta.items=[];meta.history=C.clone(history);
+  storageOK=write('commStatsData_'+current,JSON.stringify({...state,totalCount:C.total(state)}))&&write('commProfiles',JSON.stringify(profiles))&&write('commLastProfile',current);
+  $('saveStatus').lastElementChild.textContent=storageOK?'Сохранено на этом компьютере':'Не удалось сохранить данные';
+  if(!storageOK&&!save.warned){toast('Не удалось сохранить. Сохрани резервную копию в настройках.',6500);save.warned=true;}return storageOK;
+}
+function snapshot(){return C.clone({state,history});}
+function record(){undoStates.push(snapshot());if(undoStates.length>50)undoStates.shift();save();render();}
+function change(fn){fn();record();beep();}
+function undo(){if(undoStates.length<2){toast('Нечего отменять');return;}undoStates.pop();const previous=C.clone(undoStates[undoStates.length-1]);state=previous.state;history=previous.history;save();render();beep();toast('Действие отменено');}
+function validName(name){return !!name&&name.length<=80;}
+function switchProfile(name){
+  current=name;const meta=profiles[name];const order=Array.isArray(meta.itemOrder)?[...meta.itemOrder]:[...C.defaults];for(const n of meta.items||[])if(!order.includes(n))order.push(n);
+  state=C.normalize(read('commStatsData_'+name,{}),order);history=Array.isArray(meta.history)?C.clone(meta.history).filter(h=>h&&typeof h==='object'&&h.counts&&typeof h.counts==='object').slice(-30):[];
+  undoStates=[snapshot()];lastGoal=C.total(state)>=140;renderProfiles();render();save();
+}
+function renderProfiles(){const select=$('profileSelect');select.replaceChildren();for(const name of Object.keys(profiles)){const option=document.createElement('option');option.value=name;option.textContent=name==='default'?'Основной':name;select.appendChild(option);}select.value=current;}
+function applyTheme(theme){document.documentElement.dataset.theme=theme;const dark=theme==='dark';$('themeToggle').innerHTML=icon(dark?'sun':'moon');$('themeToggle').setAttribute('aria-label',dark?'Включить светлую тему':'Включить тёмную тему');write('commStatsTheme',theme);if(window.chrome?.webview)window.chrome.webview.postMessage({type:'theme',dark});}
+function renderItems(){
+  const container=$('itemsContainer');const rows=[...container.children];const same=rows.length===state.itemOrder.length&&rows.every((r,i)=>r.dataset.name===state.itemOrder[i]);
+  if(!same){container.replaceChildren();for(const name of state.itemOrder){
+    const row=document.createElement('div');row.className='item-row';row.dataset.name=name;row.draggable=true;
+    const handle=document.createElement('span');handle.className='drag-handle';handle.innerHTML=icon('drag');handle.title='Перетащить категорию';row.appendChild(handle);
+    const label=document.createElement('span');label.className='item-name';label.textContent=name;row.appendChild(label);
+    const controls=document.createElement('div');controls.className='item-controls';
+    const minus=document.createElement('button');minus.className='counter-button';minus.textContent='−';minus.dataset.action='minus';minus.setAttribute('aria-label','Уменьшить '+name);
+    const value=document.createElement('span');value.className='item-count';value.textContent=state.counts[name];
+    const plus=document.createElement('button');plus.className='counter-button plus';plus.textContent='+';plus.dataset.action='plus';plus.setAttribute('aria-label','Добавить '+name);
+    const menu=document.createElement('button');menu.className='item-menu';menu.innerHTML=icon('more');menu.dataset.action='menu';menu.setAttribute('aria-label','Настроить '+name);
+    controls.append(minus,value,plus,menu);row.appendChild(controls);container.appendChild(row);
+  }}else for(const row of rows){const value=row.querySelector('.item-count'),next=String(state.counts[row.dataset.name]);if(value.textContent!==next){value.textContent=next;spring(value);}}
+  for(const row of container.children){row.querySelector('[data-action=minus]').disabled=state.counts[row.dataset.name]===0;row.querySelector('[data-action=plus]').disabled=state.counts[row.dataset.name]>=1e9;}
+}
+function reportText(){let range=state.shiftStart?state.shiftStart+(state.shiftEnd?'–'+state.shiftEnd:''):'________';return 'Всего коммуникаций: '+C.total(state)+'\nВремя смены: '+range+'\nЗаметки: '+(state.notes||'—')+'\n\n'+state.itemOrder.map(n=>n+': '+state.counts[n]).join('\n')+'\n\nКоммуникации: '+state.commCount;}
+function updateTimer(){
+  const dur=C.duration(state),active=state.status==='Идёт'||state.status==='Пауза';setText('shiftTimerValue',C.fmtDuration(dur));setText('shiftRemainingValue',dur>=28800000?'Сверхурочно':'Осталось '+C.fmtDuration(28800000-dur));
+  setText('shiftStatusText',state.status);$('shiftStatus').dataset.state=state.status;$('startShiftBtn').disabled=active;$('pauseShiftBtn').disabled=!active;$('endShiftBtn').disabled=!active;
+  $('pauseShiftBtn').innerHTML=icon(state.status==='Пауза'?'play':'pause')+'<span>'+(state.status==='Пауза'?'Продолжить':'Пауза')+'</span>';
+  const rate=dur>0?C.total(state)/(dur/3600000):null;setText('rateValue',rate===null?'—':rate.toFixed(1));
+  setText('slowHoursEl',rate===null?'Таймер не учитывает паузы':C.total(state)<=5?'Темп появится после первых коммуникаций':rate<15?'Темп ниже 15 коммуникаций / час':rate<20?'Темп: 15–20 коммуникаций / час':'Хороший темп: больше 20 / час');
+}
+function render(){
+  const total=C.total(state);setText('totalComm',total,true);setText('commCount',state.commCount,true);setText('effSuccess',total?Math.round((state.counts['Успешно']||0)/total*1000)/10+'%':'0%');
+  setText('effProgressLabel','Цель · '+total+' / 140');const progress=Math.min(total/140*100,100);setText('effPercent',Math.round(progress)+'%');$('effProgressFill').style.width=progress+'%';$('goalProgress').setAttribute('aria-valuenow',Math.min(total,140));setText('effTarget',total>=140?'Цель выполнена. Отличная работа!':'Осталось '+(140-total)+' коммуникаций');
+  $('commMinus').disabled=state.commCount===0;$('commPlus').disabled=state.commCount>=1e9;$('undoBtn').disabled=undoStates.length<2;
+  for(const [id,value] of [['shiftStart',state.shiftStart],['shiftEnd',state.shiftEnd],['shiftNotes',state.notes]])if(document.activeElement!==$(id))$(id).value=value;
+  renderItems();updateTimer();setText('statsView',reportText());if(total>=140&&!lastGoal)celebrate();lastGoal=total>=140;
+}
+function beep(){if(!sound)return;try{audio??=new AudioContext();if(audio.state==='suspended')audio.resume();const osc=audio.createOscillator(),gain=audio.createGain();osc.frequency.value=650;gain.gain.setValueAtTime(.04,audio.currentTime);gain.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.07);osc.connect(gain);gain.connect(audio.destination);osc.start();osc.stop(audio.currentTime+.07);}catch{}}
+function celebrate(){if(reduced.matches)return;for(let i=0;i<32;i++){const el=document.createElement('span');el.className='celebration';el.style.left='50%';el.style.top='40%';el.style.background=['#944a50','#ffb2b7','#f3b86f','#8abb94'][i%4];document.body.appendChild(el);const animation=el.animate([{transform:'translate(0,0) rotate(0)',opacity:1},{transform:'translate('+(Math.random()-.5)*600+'px,'+(Math.random()*260+100)+'px) rotate('+(Math.random()*600)+'deg)',opacity:0}],{duration:1100+Math.random()*400,easing:'cubic-bezier(.2,0,.6,1)'});animation.onfinish=()=>el.remove();}}
+function startShift(){change(()=>{const now=new Date();state.startTime=now.toISOString();state.endTime=null;state.pauseStart=null;state.pausedTotal=0;state.shiftStart=C.fmtTime(now);state.status='Идёт';});toast('Смена начата');}
+function finishShift(automatic=false){if(!['Идёт','Пауза'].includes(state.status))return;change(()=>{const now=new Date();if(state.pauseStart)state.pausedTotal+=Math.max(0,now-new Date(state.pauseStart));state.pauseStart=null;state.endTime=now.toISOString();state.status='Завершена';if(!state.shiftEnd)state.shiftEnd=C.fmtTime(now);history.push({date:now.toISOString(),total:C.total(state),comm:state.commCount,duration:C.duration(state),itemOrder:[...state.itemOrder],counts:C.clone(state.counts),notes:state.notes,state:C.clone(state)});history=history.slice(-30);});toast(automatic?'Смена завершена по расписанию':'Смена завершена');celebrate();}
+function pauseShift(){change(()=>{if(state.status==='Идёт'){state.pauseStart=new Date().toISOString();state.status='Пауза';}else if(state.status==='Пауза'){state.pausedTotal+=Math.max(0,Date.now()-new Date(state.pauseStart).getTime());state.pauseStart=null;state.status='Идёт';}});}
+async function editNumber(title,value,callback){const result=await ask(title,'Укажи целое неотрицательное число.',{input:true,type:'number',value});if(result===null)return;const n=Number(result);if(!Number.isSafeInteger(n)||n<0||n>1e9){toast('Введите целое число от 0 до 1 000 000 000');return;}change(()=>callback(n));}
+$('itemsContainer').addEventListener('click',e=>{const button=e.target.closest('button'),row=button?.closest('.item-row');if(!row)return;const name=row.dataset.name;if(button.dataset.action==='menu'){itemSelected=name;$('itemDialogTitle').textContent=name;showDialog('itemDialog');}else{const delta=button.dataset.action==='plus'?1:-1;change(()=>state.counts[name]=Math.min(1e9,Math.max(0,state.counts[name]+delta)));}});
+$('itemEditBtn').onclick=()=>{const name=itemSelected;$('itemDialog').close();editNumber(name,state.counts[name],n=>state.counts[name]=n);};$('itemDeleteBtn').onclick=async()=>{const name=itemSelected;$('itemDialog').close();if(await ask('Удалить категорию?','«'+name+'» и её количество будут удалены.',{confirm:'Удалить'}))change(()=>{state.itemOrder=state.itemOrder.filter(n=>n!==name);delete state.counts[name];});};$('itemCloseBtn').onclick=()=>$('itemDialog').close();
+$('addBtn').onclick=async()=>{if(state.itemOrder.length>=100){toast('Можно добавить до 100 категорий');return;}const name=await ask('Новая категория','Например, «Встреча назначена».',{input:true});if(!validName(name))return;if(state.itemOrder.includes(name)){toast('Такая категория уже есть');return;}change(()=>{state.itemOrder.push(name);Object.defineProperty(state.counts,name,{value:0,writable:true,enumerable:true,configurable:true});});};
+$('commPlus').onclick=()=>change(()=>state.commCount=Math.min(1e9,state.commCount+1));$('commMinus').onclick=()=>change(()=>state.commCount=Math.max(0,state.commCount-1));$('commEditBtn').onclick=()=>editNumber('Коммуникации',state.commCount,n=>state.commCount=n);$('commResetBtn').onclick=async()=>{if(state.commCount&&await ask('Обнулить коммуникации?','Остальные категории и таймер сохранятся.',{confirm:'Обнулить'}))change(()=>state.commCount=0);};
+$('startShiftBtn').onclick=startShift;$('pauseShiftBtn').onclick=pauseShift;$('endShiftBtn').onclick=async()=>{if(await ask('Завершить смену?','Результат сохранится в истории.',{confirm:'Завершить'}))finishShift();};
+for(const id of ['shiftStart','shiftEnd'])$(id).addEventListener('change',()=>change(()=>state[id]=$(id).value));
+$('shiftNotes').addEventListener('input',()=>{state.notes=$('shiftNotes').value;if(undoStates.length)undoStates[undoStates.length-1].state.notes=state.notes;save();setText('statsView',reportText());});
+$('undoBtn').onclick=undo;$('resetBtn').onclick=async()=>{const answer=await ask('Сбросить счётчики?','Количество во всех категориях и отдельный счётчик станут равны нулю. Сброс можно отменить.',{confirm:'Сбросить',reset:true});if(!answer)return;change(()=>{for(const n of state.itemOrder)state.counts[n]=0;state.commCount=0;if(answer.resetShift)state=C.normalize({},state.itemOrder);});toast('Счётчики сброшены');};
+$('themeToggle').onclick=()=>applyTheme(document.documentElement.dataset.theme==='light'?'dark':'light');$('settingsBtn').onclick=()=>showDialog('settingsDialog');$('settingsCloseBtn').onclick=()=>$('settingsDialog').close();
+$('profileSelect').onchange=()=>{save();switchProfile($('profileSelect').value);};
+$('profileAddBtn').onclick=async()=>{$('settingsDialog').close();const name=await ask('Создать профиль','Профили имеют отдельные счётчики и историю.',{input:true});if(!validName(name))return;if(own(profiles,name)){toast('Профиль уже существует');return;}save();profiles[name]={itemOrder:[...C.defaults],items:[],history:[]};switchProfile(name);toast('Профиль создан');};
+$('profileRenameBtn').onclick=async()=>{$('settingsDialog').close();const name=await ask('Имя профиля','Укажи новое имя.',{input:true,value:current==='default'?'Основной':current});if(!validName(name)||name===current)return;if(own(profiles,name)){toast('Профиль уже существует');return;}save();const old=current;profiles[name]=profiles[old];delete profiles[old];current=name;save();try{localStorage.removeItem('commStatsData_'+old);}catch{}renderProfiles();toast('Профиль переименован');};
+$('profileDelBtn').onclick=async()=>{$('settingsDialog').close();if(Object.keys(profiles).length<2){toast('Нельзя удалить последний профиль');return;}if(!await ask('Удалить профиль?','«'+(current==='default'?'Основной':current)+'»: счётчики и история будут удалены.',{confirm:'Удалить'}))return;const old=current;delete profiles[old];try{localStorage.removeItem('commStatsData_'+old);}catch{}write('commProfiles',JSON.stringify(profiles));switchProfile(Object.keys(profiles)[0]);toast('Профиль удалён');};
+function download(name,content,mime){if(window.chrome?.webview){window.chrome.webview.postMessage({type:'saveFile',name,content});return;}const url=URL.createObjectURL(new Blob([content],{type:mime})),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);}
+$('copyBtn').onclick=async()=>{const text=reportText();try{if(window.chrome?.webview){window.chrome.webview.postMessage({type:'clipboard',text});return;}await navigator.clipboard.writeText(text);toast('Отчёт скопирован');}catch{const textarea=document.createElement('textarea');textarea.value=text;document.body.appendChild(textarea);textarea.select();const ok=document.execCommand('copy');textarea.remove();toast(ok?'Отчёт скопирован':'Не удалось скопировать отчёт');}};
+$('exportCsvBtn').onclick=()=>download('COUNTER_'+new Date().toISOString().slice(0,10)+'.csv',C.csv(state),'text/csv;charset=utf-8');
+$('backupBtn').onclick=()=>{save();const data=Object.create(null);for(const [name,meta] of Object.entries(profiles))data[name]={...meta,data:name===current?C.clone(state):C.normalize(read('commStatsData_'+name,{}),meta.itemOrder)};download('COUNTER_backup_'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify({schema:2,currentProfile:current,theme:document.documentElement.dataset.theme,profiles:data},null,2),'application/json;charset=utf-8');};
+$('importBtn').onclick=()=>{$('settingsDialog').close();$('importFile').click();};
+$('importFile').onchange=async()=>{const file=$('importFile').files[0];$('importFile').value='';if(!file)return;try{if(file.size>5e6)throw Error('big');const data=JSON.parse(await file.text());if(data.schema!==2||!data.profiles||typeof data.profiles!=='object'||Array.isArray(data.profiles))throw Error('format');const entries=Object.entries(data.profiles);if(!entries.length||entries.length>50||entries.some(([name,p])=>!validName(name)||!p||!Array.isArray(p.itemOrder)||!p.data))throw Error('format');if(!await ask('Загрузить резервную копию?','Текущие профили будут заменены. При необходимости сначала сохрани свою копию.',{confirm:'Загрузить'}))return;const next=Object.create(null);for(const [name,p] of entries){const normalized=C.normalize(p.data,p.itemOrder);next[name]={itemOrder:normalized.itemOrder,items:[],history:Array.isArray(p.history)?p.history.slice(-30):[]};if(!write('commStatsData_'+name,JSON.stringify(normalized)))throw Error('storage');}if(!write('commProfiles',JSON.stringify(next)))throw Error('storage');profiles=next;switchProfile(own(profiles,data.currentProfile)?data.currentProfile:entries[0][0]);if(data.theme==='light'||data.theme==='dark')applyTheme(data.theme);toast('Резервная копия загружена');}catch{toast('Не удалось загрузить копию. Нужен JSON-файл COUNTER.',5000);}};
+$('soundBtn').onclick=()=>{sound=!sound;write('counterSound',sound?'on':'off');renderSound();beep();};function renderSound(){$('soundBtn').textContent='Звук: '+(sound?'включён':'выключен');$('soundBtn').setAttribute('aria-pressed',sound);}
+$('historyBtn').onclick=()=>{
+  $('historySubtitle').textContent='Профиль: '+(current==='default'?'Основной':current);const list=$('historyList');list.replaceChildren();if(!history.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='Пока нет завершённых смен';list.appendChild(empty);}
+  [...history].reverse().forEach(h=>{const button=document.createElement('button');button.className='history-item';const date=document.createElement('small');date.textContent=new Date(h.date).toLocaleString('ru-RU',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});const summary=document.createElement('strong');summary.textContent='Всего: '+C.number(h.total)+' · '+C.fmtDuration(Number(h.duration)||0);const note=document.createElement('small');note.textContent=h.notes||'Коммуникации: '+C.number(h.comm);button.append(date,summary,note);button.onclick=async()=>{$('historyDialog').close();if(!await ask('Загрузить эту смену?','Текущие счётчики будут заменены. Действие можно отменить.',{confirm:'Загрузить'}))return;change(()=>{if(h.state)state=C.normalize(h.state,h.state.itemOrder);else{state=C.normalize({counts:h.counts,commCount:h.comm,notes:h.notes},h.itemOrder||Object.keys(h.counts||{}));const end=new Date(h.date).getTime(),elapsed=Math.max(0,Number(h.duration)||0);if(Number.isFinite(end)){state.startTime=new Date(end-elapsed).toISOString();state.endTime=new Date(end).toISOString();state.status='Завершена';state.shiftStart=C.fmtTime(new Date(end-elapsed));state.shiftEnd=C.fmtTime(new Date(end));}}});toast('Смена загружена');};list.appendChild(button);});showDialog('historyDialog');
+};$('historyCloseBtn').onclick=()=>$('historyDialog').close();
+let dragName=null;const items=$('itemsContainer');items.addEventListener('dragstart',e=>{if(e.target.closest('button,input')){e.preventDefault();return;}const row=e.target.closest('.item-row');if(!row)return;dragName=row.dataset.name;row.classList.add('dragging');e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',dragName);});items.addEventListener('dragover',e=>{const row=e.target.closest('.item-row');if(!row||!dragName||row.dataset.name===dragName)return;e.preventDefault();items.querySelectorAll('.drag-over').forEach(r=>r.classList.remove('drag-over'));row.classList.add('drag-over');});items.addEventListener('dragend',()=>{dragName=null;items.querySelectorAll('.drag-over,.dragging').forEach(r=>r.classList.remove('drag-over','dragging'));});items.addEventListener('drop',e=>{e.preventDefault();const row=e.target.closest('.item-row'),name=dragName;dragName=null;if(!row||!name||row.dataset.name===name||!state.itemOrder.includes(name))return;change(()=>{state.itemOrder=state.itemOrder.filter(n=>n!==name);state.itemOrder.splice(state.itemOrder.indexOf(row.dataset.name),0,name);});});
+document.addEventListener('pointerdown',e=>{const button=e.target.closest('button');if(!button||button.disabled||reduced.matches)return;const rect=button.getBoundingClientRect(),size=Math.max(rect.width,rect.height)*2,ripple=document.createElement('span');ripple.className='ripple';ripple.style.width=ripple.style.height=size+'px';ripple.style.left=(e.clientX-rect.left-size/2)+'px';ripple.style.top=(e.clientY-rect.top-size/2)+'px';button.appendChild(ripple);ripple.addEventListener('animationend',()=>ripple.remove());});
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!e.target.closest('input,textarea,[contenteditable=true]')&&!document.querySelector('dialog[open]')){e.preventDefault();undo();}});window.addEventListener('beforeunload',save);document.addEventListener('visibilitychange',()=>{if(document.hidden)save();});
+if(window.chrome?.webview)window.chrome.webview.addEventListener('message',e=>{if(e.data?.type==='toast')toast(e.data.message);});
+const legacy=read('commStatsData',null);
+if(legacy&&legacy.counts&&!read('commStatsData_default',null)){
+  const oldProfiles=read('commProfiles',{});const migrated=oldProfiles&&typeof oldProfiles==='object'&&!Array.isArray(oldProfiles)?oldProfiles:{};
+  migrated.default={itemOrder:Array.isArray(legacy.itemOrder)?legacy.itemOrder:Object.keys(legacy.counts),items:[],history:[]};
+  write('commProfiles',JSON.stringify(migrated));write('commStatsData_default',JSON.stringify(legacy));
+}
+const loaded=read('commProfiles',{});if(loaded&&typeof loaded==='object'&&!Array.isArray(loaded))for(const [name,p] of Object.entries(loaded))if(validName(name)&&p&&typeof p==='object')profiles[name]=p;
+if(!Object.keys(profiles).length)profiles.default={itemOrder:[...C.defaults],items:[],history:[]};let last;try{last=localStorage.getItem('commLastProfile');sound=localStorage.getItem('counterSound')==='on';applyTheme(localStorage.getItem('commStatsTheme')==='dark'?'dark':'light');}catch{applyTheme('light');}renderSound();switchProfile(own(profiles,last)?last:Object.keys(profiles)[0]);
+setInterval(()=>{updateTimer();if(['Идёт','Пауза'].includes(state.status)){const end=C.scheduledEnd(state);if(end!==null&&Date.now()>=end)finishShift(true);}},1000);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+name: Проверка и сборка COUNTER
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  counter:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Проверить расчёты
+        run: node --test tests/core.test.cjs
+      - name: Проверить интерфейс
+        shell: pwsh
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npx playwright install chromium
+          node tests/ui.cjs
+      - name: Собрать один EXE
+        shell: powershell
+        run: .\build.ps1
+      - name: Проверить запуск Windows-оболочки
+        shell: pwsh
+        run: |
+          Invoke-WebRequest 'https://go.microsoft.com/fwlink/p/?LinkId=2124703' -OutFile "$env:RUNNER_TEMP\WebView2Setup.exe"
+          Start-Process "$env:RUNNER_TEMP\WebView2Setup.exe" -ArgumentList '/silent /install' -Wait
+          $p = Start-Process ./dist/COUNTER.exe -ArgumentList '--smoke-test' -PassThru
+          if (!$p.WaitForExit(40000)) { $p.Kill(); throw 'Native smoke test timed out.' }
+          if ($p.ExitCode -ne 0) { throw "Native smoke test failed: $($p.ExitCode)" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: COUNTER-V2
+          path: dist/COUNTER.exe
+          if-no-files-found: error
