@@ -72,10 +72,6 @@
       </div>
     </div>
     <div class="side-column">
-      <section class="card detail-card" aria-labelledby="detailsTitle">
-        <div class="card-header"><h2 id="detailsTitle">Детализация</h2><button id="addBtn"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Категория</button></div>
-        <div id="itemsContainer"></div>
-      </section>
       <section class="card shift-card" aria-labelledby="shiftTitle">
         <div class="card-header"><h2 id="shiftTitle">Смена</h2><span class="status" id="shiftStatus" data-state="Не начата"><span class="status-dot"></span><span id="shiftStatusText">Не начата</span></span></div>
         <div class="timer" id="shiftTimerValue">00:00:00</div><div class="remaining" id="shiftRemainingValue">Осталось 08:00:00</div>
@@ -88,6 +84,10 @@
         <label class="field notes-field">Заметки<textarea id="shiftNotes" placeholder="Что важно не забыть…" maxlength="2000"></textarea></label>
         <div class="rate-note" id="slowHoursEl"></div>
       </section>
+      <section class="card detail-card" aria-labelledby="detailsTitle">
+        <div class="card-header"><h2 id="detailsTitle">Детализация</h2><button id="addBtn"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Категория</button></div>
+        <div id="itemsContainer"></div>
+      </section>
       <button id="historyBtn" class="tonal"><svg class="icon" aria-hidden="true"><use href="#i-history"/></svg>История смен</button>
     </div>
   </div>
@@ -95,7 +95,7 @@
   <footer class="footer"><span class="saved" id="saveStatus"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><span>Сохраняется на этом компьютере</span></span><span>Ctrl+Z — отменить действие</span></footer>
 </main>
 <dialog id="actionDialog"><form class="dialog-content" id="actionForm"><h2 id="dialogTitle"></h2><p class="dialog-message" id="dialogMessage"></p><input id="dialogInput" class="dialog-input" hidden maxlength="80" aria-label="Значение"><label class="reset-option" id="resetOption" hidden><input type="checkbox" id="resetShift">Сбросить также таймер и заметки</label><div class="dialog-actions"><button type="button" id="dialogCancel">Отмена</button><button type="submit" id="dialogConfirm" class="filled">Сохранить</button></div></form></dialog>
-<dialog id="settingsDialog"><div class="dialog-content"><h2>Настройки</h2><p class="dialog-message">Профили, резервная копия и внешний вид</p><div class="settings-section">Профиль</div><div class="settings-actions"><button id="profileAddBtn">Создать профиль</button><button id="profileRenameBtn">Переименовать профиль</button><button id="profileDelBtn" class="danger">Удалить профиль</button></div><div class="settings-section">Данные и звук</div><div class="settings-actions"><button id="backupBtn">Сохранить резервную копию</button><button id="importBtn">Загрузить резервную копию</button><button id="soundBtn" aria-pressed="false">Звук: выключен</button></div><div class="settings-section">Внешний вид</div><div class="settings-actions"><button id="effectsBtn" aria-pressed="false">Эффекты: полные</button></div><div class="dialog-actions"><button class="filled" id="settingsCloseBtn">Готово</button></div></div></dialog>
+<dialog id="settingsDialog"><div class="dialog-content"><h2>Настройки</h2><p class="dialog-message">Профили, резервная копия и внешний вид</p><div class="settings-section">Профиль</div><div class="settings-actions"><button id="profileAddBtn">Создать профиль</button><button id="profileRenameBtn">Переименовать профиль</button><button id="profileDelBtn" class="danger">Удалить профиль</button></div><div class="settings-section">Данные и звук</div><div class="settings-actions"><button id="backupBtn">Сохранить резервную копию</button><button id="importBtn">Загрузить резервную копию</button><button id="soundBtn" aria-pressed="false">Звук: выключен</button></div><div class="settings-section">Внешний вид</div><div class="settings-actions"><button id="effectsBtn" aria-pressed="false">Эффекты: полные</button></div><div class="settings-section" id="updatesSection" hidden>Обновления</div><div class="settings-actions" id="updatesActions" hidden><button id="checkUpdateBtn"><svg class="icon" aria-hidden="true"><use href="#i-update"/></svg>Проверить обновления</button></div><div class="dialog-actions"><button class="filled" id="settingsCloseBtn">Готово</button></div></div></dialog>
 <dialog id="historyDialog"><div class="dialog-content"><h2>История смен</h2><p class="dialog-message" id="historySubtitle"></p><div id="historyList"></div><div class="dialog-actions"><button class="filled" id="historyCloseBtn">Закрыть</button></div></div></dialog>
 <dialog id="itemDialog"><div class="dialog-content"><h2 id="itemDialogTitle"></h2><div class="settings-actions"><button id="itemEditBtn">Изменить количество</button><button id="itemDeleteBtn" class="danger">Удалить категорию</button></div><div class="dialog-actions"><button id="itemCloseBtn">Закрыть</button></div></div></dialog>
 <dialog id="updateDialog" aria-labelledby="updateTitle" aria-describedby="updateMessage"><div class="dialog-content update-content"><div class="update-icon"><svg class="icon" aria-hidden="true"><use href="#i-update"/></svg></div><h2 id="updateTitle" tabindex="-1" autofocus>Доступно обновление</h2><div class="update-versions"><span id="updateCurrent"></span><svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg><strong id="updateVersion"></strong></div><p class="dialog-message" id="updateMessage" aria-live="polite"></p><div class="update-progress" id="updateProgress" role="progressbar" aria-label="Загрузка обновления" aria-valuemin="0" aria-valuemax="100" hidden><div class="update-progress-fill" id="updateProgressFill"></div></div><div class="dialog-actions"><button type="button" id="updateManualBtn" hidden>Скачать вручную</button><button type="button" id="updateLaterBtn">Позже</button><button type="button" id="updateNowBtn" class="scarlet"><svg class="icon" aria-hidden="true"><use href="#i-update"/></svg><span id="updateNowText">Обновить</span></button></div></div></dialog>

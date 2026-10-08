@@ -22,6 +22,7 @@ internal static class Updater
     private static bool relaunchPending;
     private static Release available;
     private static bool downloading;
+    private static bool checking;
     private const string AssetName = "COUNTER.exe";
     private const long MaxDownloadSize = 200L * 1024 * 1024;
     private const string ReleasesPage = "https://github.com/" + Repository + "/releases/latest";
@@ -42,26 +43,38 @@ internal static class Updater
         TryDelete(NewPath);
     }
 
-    // Нашли новую версию: окно показывает её в интерфейсе (диалог MD3 и алая кнопка «Обновить»).
-    internal static void CheckInBackground(CounterWindow owner)
+    // Проверка при запуске, раз в час и по кнопке «Проверить обновления». Вызывается в потоке окна.
+    // Новая версия показывается в интерфейсе (диалог MD3 и алая кнопка «Обновить»).
+    internal static void Check(CounterWindow owner, bool manual)
     {
+        if (checking || downloading) return;
+        checking = true;
         ThreadPool.QueueUserWorkItem(delegate
         {
-            Release release;
+            Release release = null;
             try { release = FetchLatest(); }
-            catch (Exception) { return; } // Нет сети или GitHub недоступен: работаем как обычно.
-            if (release == null || release.Version <= CurrentVersion) return;
-            try
-            {
-                owner.BeginInvoke(new Action(delegate
-                {
-                    if (owner.IsDisposed) return;
-                    available = release;
-                    owner.PostUpdate(new { type = "update", state = "available", version = Format(release.Version), current = Format(CurrentVersion) });
-                }));
-            }
+            catch (Exception) { } // Нет сети или GitHub недоступен: работаем как обычно.
+            try { owner.BeginInvoke(new Action(delegate { checking = false; if (!owner.IsDisposed) Report(owner, release, manual); })); }
             catch (InvalidOperationException) { } // Окно уже закрыто.
         });
+    }
+
+    private static void Report(CounterWindow owner, Release release, bool manual)
+    {
+        if (release == null)
+        {
+            if (manual) owner.PostUpdate(new { type = "update", state = "check-failed" });
+            return;
+        }
+        if (release.Version <= CurrentVersion)
+        {
+            if (manual) owner.PostUpdate(new { type = "update", state = "latest", current = Format(CurrentVersion) });
+            return;
+        }
+        bool known = available != null && available.Version == release.Version;
+        available = release;
+        // Фоновая проверка не показывает окно повторно про ту же версию: кнопка в панели уже есть.
+        if (!known || manual) owner.PostUpdate(new { type = "update", state = "available", version = Format(release.Version), current = Format(CurrentVersion) });
     }
 
     // Пользователь нажал «Обновить». Вызывается в потоке окна.

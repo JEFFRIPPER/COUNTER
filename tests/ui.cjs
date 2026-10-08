@@ -30,7 +30,7 @@ async function session(url, options={}) {
   const {context,page,errors,external}=await session(url);
   await page.goto(url); await page.locator('.item-row').first().waitFor();
   check(await page.locator('.item-row').count()===2&&await page.locator('.item-name').allTextContents().then(n=>n.join()==='Звонки,Успешно'),'detail has only Звонки and Успешно');
-  check(await page.evaluate(()=>document.querySelector('.side-column').firstElementChild.classList.contains('detail-card')&&!!document.querySelector('.main-column .communications')),'communications on the left, detail at the top right');
+  check(await page.evaluate(()=>!!document.querySelector('.side-column .shift-card + .detail-card')&&!!document.querySelector('.main-column .communications')),'communications on the left, detail under the shift on the right');
   for(let i=0;i<5;i++)await row(page,'Звонки').locator('[data-action=plus]').click();
   for(let i=0;i<2;i++)await row(page,'Успешно').locator('[data-action=plus]').click();
   for(let i=0;i<4;i++)await page.locator('#commPlus').click();
@@ -125,6 +125,12 @@ async function session(url, options={}) {
   await native.page.locator('#settingsCloseBtn').click();
   const send=data=>native.page.evaluate(d=>window.nativeListener({data:d}),data);
   check(await native.page.locator('#updateBtn').isHidden()&&!await native.page.locator('#updateDialog').evaluate(d=>d.open),'no update UI until the program reports a new version');
+  await native.page.locator('#settingsBtn').click();await native.page.locator('#checkUpdateBtn').click();
+  check(await native.page.evaluate(()=>nativeMessages.some(m=>m.type==='checkUpdate'))&&!await native.page.locator('#settingsDialog').evaluate(d=>d.open),'«Проверить обновления» asks the program without a restart');
+  await send({type:'update',state:'latest',current:'2.4.1'});
+  check((await value(native.page,'toast')).includes('последняя версия 2.4.1'),'up-to-date result is shown');
+  await send({type:'update',state:'check-failed'});
+  check((await value(native.page,'toast')).includes('Не удалось проверить'),'failed check is shown');
   await send({type:'update',state:'available',version:'9.9.0',current:'2.3.0'});
   check(await native.page.locator('#updateDialog').evaluate(d=>d.open)&&await value(native.page,'updateVersion')==='9.9.0'&&await value(native.page,'updateCurrent')==='2.3.0'&&await native.page.locator('#updateBtn').isVisible(),'update dialog and scarlet button appear');
   check(await native.page.evaluate(()=>document.activeElement.id)==='updateTitle','auto-opened dialog focuses its title, not «Обновить»');

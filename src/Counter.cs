@@ -123,6 +123,7 @@ internal sealed class CounterWindow : Form
     private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 6000000 };
     private CoreWebView2Environment environment;
     private readonly System.Windows.Forms.Timer smokeTimeout = new System.Windows.Forms.Timer { Interval = 25000 };
+    private readonly System.Windows.Forms.Timer updateTimer = new System.Windows.Forms.Timer { Interval = 3600000 }; // Проверка обновлений раз в час.
     private int smokeStage;
 
     internal CounterWindow()
@@ -146,8 +147,9 @@ internal sealed class CounterWindow : Form
         Controls.Add(view);
         Controls.Add(loading);
         Load += Initialize;
-        FormClosed += delegate { smokeTimeout.Stop(); smokeTimeout.Dispose(); view.Dispose(); };
+        FormClosed += delegate { smokeTimeout.Stop(); smokeTimeout.Dispose(); updateTimer.Stop(); updateTimer.Dispose(); view.Dispose(); };
         smokeTimeout.Tick += delegate { Close(); };
+        updateTimer.Tick += delegate { Updater.Check(this, false); };
         if (Program.SmokeMode) ShowInTaskbar = false;
     }
 
@@ -175,7 +177,7 @@ internal sealed class CounterWindow : Form
                 {
                     loading.Visible = false; view.Focus();
                     if (Program.SmokeMode) ValidateSmoke();
-                    else if (Program.UpdateCheck) { Program.UpdateCheck = false; Updater.CheckInBackground(this); }
+                    else if (Program.UpdateCheck) { Program.UpdateCheck = false; Updater.Check(this, false); updateTimer.Start(); }
                 }
                 else { loading.Text = "Не удалось открыть интерфейс. Закрой и снова запусти счётчик."; }
             };
@@ -260,6 +262,7 @@ internal sealed class CounterWindow : Form
                 if (!string.IsNullOrEmpty(text) && text.Length <= 200000) { Clipboard.SetDataObject(text, true, 5, 100); Notify("Отчёт скопирован"); }
             }
             else if (type == "update") Updater.Start(this);
+            else if (type == "checkUpdate") Updater.Check(this, true);
             else if (type == "openReleases") Updater.OpenReleasesPage();
             else if (type == "saveFile" && data.ContainsKey("content") && data.ContainsKey("name"))
             {
