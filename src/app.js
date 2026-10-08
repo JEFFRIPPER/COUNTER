@@ -20,7 +20,7 @@ function ask(title,message,options={}){
 }
 function settleDialog(confirmed){if(!dialogResolve)return;const {resolve,options}=dialogResolve;dialogResolve=null;const value=!confirmed?null:options.input?$('dialogInput').value.trim():options.reset?{resetShift:$('resetShift').checked}:true;$('actionDialog').close();resolve(value);}
 $('actionForm').addEventListener('submit',e=>{e.preventDefault();if($('actionForm').reportValidity())settleDialog(true);});$('dialogCancel').onclick=()=>settleDialog(false);$('actionDialog').addEventListener('cancel',e=>{e.preventDefault();settleDialog(false);});
-document.querySelectorAll('dialog').forEach(el=>el.addEventListener('click',e=>{if(e.target!==el)return;const r=el.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom){if(el.id==='actionDialog')settleDialog(false);else if(!(el.id==='updateDialog'&&updateBusy))el.close();}}));
+document.querySelectorAll('dialog').forEach(el=>el.addEventListener('click',e=>{if(e.target!==el)return;const r=el.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom){if(el.id==='actionDialog')settleDialog(false);else el.close();}}));
 function save(){
   const meta=profiles[current];meta.itemOrder=[...state.itemOrder];meta.items=[];meta.history=C.clone(history);
   storageOK=write('commStatsData_'+current,JSON.stringify({...state,totalCount:C.total(state)}))&&write('commProfiles',JSON.stringify(profiles))&&write('commLastProfile',current);
@@ -60,7 +60,7 @@ function updateTimer(){
   const dur=C.duration(state),active=state.status==='Идёт'||state.status==='Пауза';setText('shiftTimerValue',C.fmtDuration(dur));setText('shiftRemainingValue',dur>=28800000?'Сверхурочно':'Осталось '+C.fmtDuration(28800000-dur));
   setText('shiftStatusText',state.status);$('shiftStatus').dataset.state=state.status;$('startShiftBtn').disabled=active;$('pauseShiftBtn').disabled=!active;$('endShiftBtn').disabled=!active;
   const paused=state.status==='Пауза'?'1':'0';if($('pauseShiftBtn').dataset.paused!==paused){$('pauseShiftBtn').dataset.paused=paused;$('pauseShiftBtn').innerHTML=icon(paused==='1'?'play':'pause')+'<span>'+(paused==='1'?'Продолжить':'Пауза')+'</span>';}
-  const rate=dur>=60000?C.total(state)/(dur/3600000):null;setText('rateValue',rate===null?'0':rate.toFixed(1));
+  const rate=dur>=60000?C.total(state)/(dur/3600000):null;setText('rateValue',rate!==null?rate.toFixed(1):C.total(state)?'–':'0');setText('rateCaption',rate!==null?'в среднем за смену':state.status==='Не начата'?'нажми «Начать», чтобы считать темп':'темп появится через минуту');
   setText('slowHoursEl',rate===null?'Таймер не учитывает паузы':C.total(state)<=5?'Темп появится после первых коммуникаций':rate<15?'Темп ниже 15 коммуникаций / час':rate<20?'Темп: 15–20 коммуникаций / час':'Хороший темп: от 20 / час');
 }
 function render(){
@@ -108,25 +108,25 @@ let dragName=null;const items=$('itemsContainer');items.addEventListener('dragst
 document.addEventListener('pointerdown',e=>{const button=e.target.closest('button');if(!button||button.disabled||calm())return;const rect=button.getBoundingClientRect(),size=Math.max(rect.width,rect.height)*2,ripple=document.createElement('span');ripple.className='ripple';ripple.style.width=ripple.style.height=size+'px';ripple.style.left=(e.clientX-rect.left-size/2)+'px';ripple.style.top=(e.clientY-rect.top-size/2)+'px';button.appendChild(ripple);setTimeout(()=>ripple.remove(),600);});
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.code==='KeyZ'&&!e.target.closest('input,textarea,[contenteditable=true]')&&!document.querySelector('dialog[open]')){e.preventDefault();undo();}});window.addEventListener('beforeunload',save);document.addEventListener('visibilitychange',()=>{if(document.hidden)save();});
 // Обновление по воздуху: о новой версии сообщает программа, скачивание и замену делает она же.
+// Окно загрузки можно скрыть и работать дальше: прогресс виден на алой кнопке в верхней панели.
 let updateBusy=false;
 function updateView(state,percent){
-  const busy=state==='progress',failed=state==='error',bar=$('updateProgress'),known=busy&&percent>=0;updateBusy=busy;
-  $('updateNowBtn').disabled=busy;$('updateLaterBtn').disabled=busy;$('updateManualBtn').hidden=!failed;$('updateLaterBtn').textContent=failed?'Закрыть':'Позже';
-  setText('updateNowText',busy?(known?'Скачиваем… '+percent+'%':'Скачиваем…'):failed?'Повторить':'Обновить');
+  const busy=state==='progress',failed=state==='error',bar=$('updateProgress'),known=busy&&percent>=0,label=busy?(known?'Скачиваем… '+percent+'%':'Скачиваем…'):failed?'Повторить':'Обновить';updateBusy=busy;
+  if(busy&&document.activeElement===$('updateNowBtn'))$('updateLaterBtn').focus();$('updateNowBtn').disabled=busy;$('updateManualBtn').hidden=!failed;$('updateLaterBtn').textContent=busy?'Скрыть':failed?'Закрыть':'Позже';
+  setText('updateNowText',label);setText('updateChipText',label);$('updateBtn').setAttribute('aria-label',label);
   bar.hidden=!busy;bar.classList.toggle('indeterminate',busy&&!known);$('updateProgressFill').style.width=known?percent+'%':'';if(known)bar.setAttribute('aria-valuenow',percent);else bar.removeAttribute('aria-valuenow');
 }
 function onUpdate(d){
   if(d.state==='available'&&typeof d.version==='string'){
     setText('updateVersion',d.version);setText('updateCurrent',String(d.current||''));setText('updateTitle','Доступно обновление');setText('updateMessage','Счётчик скачает новую версию, проверит её и перезапустится сам. Сохранённые данные не изменятся.');
     updateView('available');$('updateBtn').hidden=false;$('updateBtn').title='Установить версию '+d.version;if(!document.querySelector('dialog[open]'))showDialog('updateDialog');
-  }else if(d.state==='progress'&&$('updateBtn').hidden===false){const p=Number(d.percent);updateView('progress',Number.isFinite(p)&&p>=0?Math.min(100,Math.round(p)):-1);}
-  else if(d.state==='error'){setText('updateTitle','Не удалось обновить');setText('updateMessage',String(d.message||'Неизвестная ошибка')+'\n\nМожно повторить или скачать новую версию вручную со страницы релизов.');updateView('error');if(!$('updateDialog').open)showDialog('updateDialog');}
+  }else if(d.state==='progress'&&updateBusy){const p=Number(d.percent);updateView('progress',Number.isFinite(p)&&p>=0?Math.min(100,Math.round(p)):-1);}
+  else if(d.state==='error'){setText('updateTitle','Не удалось обновить');setText('updateMessage',String(d.message||'Неизвестная ошибка')+'\n\nМожно повторить или скачать новую версию вручную со страницы релизов.');updateView('error');if(!document.querySelector('dialog[open]'))showDialog('updateDialog');if($('updateDialog').open)$('updateNowBtn').focus();}
 }
-$('updateBtn').onclick=()=>{if(!$('updateDialog').open)showDialog('updateDialog');};
-$('updateNowBtn').onclick=()=>{if(updateBusy||!window.chrome?.webview)return;setText('updateTitle','Обновляем счётчик');setText('updateMessage','Не закрывай программу. После загрузки она перезапустится сама.');updateView('progress',-1);window.chrome.webview.postMessage({type:'update'});};
-$('updateLaterBtn').onclick=()=>{if(!updateBusy)$('updateDialog').close();};
+$('updateBtn').onclick=()=>{if(!$('updateDialog').open)showDialog('updateDialog');if(!updateBusy)$('updateNowBtn').focus();};
+$('updateNowBtn').onclick=()=>{if(updateBusy||!window.chrome?.webview)return;setText('updateTitle','Обновляем счётчик');setText('updateMessage','Окно можно скрыть и работать дальше. После загрузки счётчик перезапустится сам, данные сохранятся.');updateView('progress',-1);window.chrome.webview.postMessage({type:'update'});};
+$('updateLaterBtn').onclick=()=>$('updateDialog').close();
 $('updateManualBtn').onclick=()=>window.chrome?.webview?.postMessage({type:'openReleases'});
-$('updateDialog').addEventListener('cancel',e=>{if(updateBusy)e.preventDefault();});
 if(window.chrome?.webview)window.chrome.webview.addEventListener('message',e=>{if(e.data?.type==='toast')toast(e.data.message);else if(e.data?.type==='update')onUpdate(e.data);});
 const legacy=read('commStatsData',null);
 if(legacy&&legacy.counts&&!read('commStatsData_default',null)&&!read('commLegacyMigrated',false)){

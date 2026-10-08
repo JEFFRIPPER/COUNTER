@@ -295,7 +295,9 @@ internal sealed class CounterWindow : Form
     // Состояние обновления для диалога в интерфейсе. Вызывается в потоке окна.
     internal void PostUpdate(object message)
     {
-        if (!IsDisposed && !view.IsDisposed && view.CoreWebView2 != null) view.CoreWebView2.PostWebMessageAsJson(json.Serialize(message));
+        try { if (!IsDisposed && !view.IsDisposed && view.CoreWebView2 != null) view.CoreWebView2.PostWebMessageAsJson(json.Serialize(message)); }
+        catch (InvalidOperationException) { } // Процесс WebView2 упал или окно закрывается.
+        catch (COMException) { }
     }
 
     [DllImport("dwmapi.dll")] private static extern int DwmSetWindowAttribute(IntPtr handle, int attribute, ref int value, int size);
