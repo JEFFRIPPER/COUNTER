@@ -60,11 +60,11 @@ function updateTimer(){
   const dur=C.duration(state),active=state.status==='Идёт'||state.status==='Пауза';setText('shiftTimerValue',C.fmtDuration(dur));setText('shiftRemainingValue',dur>=28800000?'Сверхурочно':'Осталось '+C.fmtDuration(28800000-dur));
   setText('shiftStatusText',state.status);$('shiftStatus').dataset.state=state.status;$('startShiftBtn').disabled=active;$('pauseShiftBtn').disabled=!active;$('endShiftBtn').disabled=!active;
   const paused=state.status==='Пауза'?'1':'0';if($('pauseShiftBtn').dataset.paused!==paused){$('pauseShiftBtn').dataset.paused=paused;$('pauseShiftBtn').innerHTML=icon(paused==='1'?'play':'pause')+'<span>'+(paused==='1'?'Продолжить':'Пауза')+'</span>';}
-  const rate=dur>=60000?C.total(state)/(dur/3600000):null;setText('rateValue',rate!==null?rate.toFixed(1):C.total(state)?'–':'0');setText('rateCaption',rate!==null?'в среднем за смену':state.status==='Не начата'?'нажми «Начать», чтобы считать темп':'темп появится через минуту');
+  const rate=dur>=60000?C.total(state)/(dur/3600000):null;setText('rateValue',rate===null?'—':rate.toFixed(1));
   setText('slowHoursEl',rate===null?'Таймер не учитывает паузы':C.total(state)<=5?'Темп появится после первых коммуникаций':rate<15?'Темп ниже 15 коммуникаций / час':rate<20?'Темп: 15–20 коммуникаций / час':'Хороший темп: от 20 / час');
 }
 function render(){
-  const total=C.total(state);setText('totalComm',total,true);setText('commCount',state.commCount,true);setText('successCount',state.counts['Успешно']||0,true);
+  const total=C.total(state);setText('totalComm',total,true);setText('commCount',state.commCount,true);setText('effSuccess',total?Math.round(Math.min(state.counts['Успешно']||0,total)/total*1000)/10+'%':'0%');
   setText('effProgressLabel','Цель · '+total+' / 140');const progress=Math.min(total/140*100,100);setText('effPercent',Math.round(progress)+'%');$('effProgressFill').style.width=progress+'%';$('goalProgress').setAttribute('aria-valuenow',Math.min(total,140));setText('effTarget',total>=140?'Цель выполнена. Отличная работа!':'Осталось '+(140-total)+' коммуникаций');
   $('commMinus').disabled=state.commCount===0;$('commPlus').disabled=state.commCount>=1e9;$('undoBtn').disabled=undoStates.length<2;
   for(const [id,value] of [['shiftStart',state.shiftStart],['shiftEnd',state.shiftEnd],['shiftNotes',state.notes]])if(document.activeElement!==$(id))$(id).value=value;
@@ -136,6 +136,19 @@ if(legacy&&legacy.counts&&!read('commStatsData_default',null)&&!read('commLegacy
   write('commProfiles',JSON.stringify(migrated));write('commStatsData_default',JSON.stringify(legacy));write('commLegacyMigrated','true');
 }
 const loaded=read('commProfiles',{});if(loaded&&typeof loaded==='object'&&!Array.isArray(loaded))for(const [name,p] of Object.entries(loaded))if(validName(name)&&p&&typeof p==='object')profiles[name]=p;
+// 2.4: в детализации остаются «Звонки» и «Успешно». Старые категории были исходами звонка,
+// поэтому «Звонки» = их сумма (итог смены не меняется), «Успешно» сохраняется. Свои категории не трогаем.
+if(!read('commCallsMigrated',false)){
+  for(const [name,meta] of Object.entries(profiles)){
+    const order=Array.isArray(meta.itemOrder)?[...meta.itemOrder]:[...C.legacyDefaults];for(const n of Array.isArray(meta.items)?meta.items:[])if(!order.includes(n))order.push(n);
+    if(!order.length||!order.every(n=>C.legacyDefaults.includes(n)))continue;
+    const data=read('commStatsData_'+name,null),counts=data&&data.counts&&typeof data.counts==='object'?data.counts:{};
+    const migrated={Звонки:Math.min(1e9,order.reduce((n,k)=>n+C.number(counts[k]),0)),Успешно:order.includes('Успешно')?C.number(counts['Успешно']):0};
+    if(data)write('commStatsData_'+name,JSON.stringify({...data,itemOrder:[...C.defaults],counts:migrated}));
+    meta.itemOrder=[...C.defaults];meta.items=[];
+  }
+  write('commProfiles',JSON.stringify(profiles));write('commCallsMigrated','true');
+}
 if(!Object.keys(profiles).length)profiles.default={itemOrder:[...C.defaults],items:[],history:[]};let last;try{last=localStorage.getItem('commLastProfile');sound=localStorage.getItem('counterSound')==='on';applyEffects(localStorage.getItem('counterEffects'));applyTheme(localStorage.getItem('commStatsTheme')==='light'?'light':'dark');}catch{applyEffects('auto');applyTheme('dark');}renderSound();switchProfile(own(profiles,last)?last:Object.keys(profiles)[0]);
 setInterval(()=>{updateTimer();if(['Идёт','Пауза'].includes(state.status)){const end=C.scheduledEnd(state);if(end!==null&&Date.now()>=end&&end!==skipAutoFinish)finishShift(true,end);}},1000);
 })();

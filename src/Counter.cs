@@ -200,7 +200,7 @@ internal sealed class CounterWindow : Form
             if (smokeStage == 0)
             {
                 smokeStage = 1;
-                string result = await view.CoreWebView2.ExecuteScriptAsync("(function(){if(document.querySelectorAll('.item-row').length!==8)return false;document.querySelector('[data-action=plus]').click();document.getElementById('commPlus').click();document.getElementById('startShiftBtn').click();document.getElementById('pauseShiftBtn').click();var note=document.getElementById('shiftNotes');note.value='smoke';note.dispatchEvent(new Event('input'));var d=JSON.parse(localStorage.getItem('commStatsData_default'));return document.getElementById('totalComm').textContent==='1'&&d.commCount===1&&d.status==='Пауза'&&!!d.pauseStart&&d.notes==='smoke';})()");
+                string result = await view.CoreWebView2.ExecuteScriptAsync("(function(){if(document.querySelectorAll('.item-row').length!==2)return false;document.querySelector('[data-action=plus]').click();document.getElementById('commPlus').click();document.getElementById('startShiftBtn').click();document.getElementById('pauseShiftBtn').click();var note=document.getElementById('shiftNotes');note.value='smoke';note.dispatchEvent(new Event('input'));var d=JSON.parse(localStorage.getItem('commStatsData_default'));return document.getElementById('totalComm').textContent==='1'&&d.commCount===1&&d.status==='Пауза'&&!!d.pauseStart&&d.notes==='smoke';})()");
                 if (result != "true") { Close(); return; }
                 smokeStage = 2;
                 view.CoreWebView2.Reload();

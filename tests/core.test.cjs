@@ -73,3 +73,11 @@ test('Not started shift drops stale timestamps and long pauses are kept',()=>{
   assert.equal(s.startTime,null);assert.equal(s.endTime,null);assert.equal(C.duration(s),0);
   assert.equal(C.normalize({status:'Идёт',startTime:'2026-10-06T08:00:00Z',pausedTotal:2e9},[]).pausedTotal,2e9);
 });
+test('Default detail is Звонки and Успешно; the total follows Звонки, not the sum',()=>{
+  const s=C.normalize({counts:{Звонки:10,Успешно:3}});
+  assert.deepEqual([...s.itemOrder],['Звонки','Успешно']);
+  assert.equal(C.total(s),10);
+  assert.ok(C.csv(s).includes('"Всего";"10"'));
+  const custom=C.normalize({counts:{Звонки:4,Перезвон:2}},['Звонки','Перезвон']);
+  assert.equal(C.total(custom),4,'Other categories are part of Звонки');
+});
