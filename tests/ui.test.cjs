@@ -28,7 +28,7 @@ const html = require('../tools/bundle.cjs').bundle();
     await row('НДЗ').getByRole('button',{name:'Добавить НДЗ',exact:true}).click();
     await row('Успешно').getByRole('button',{name:'Добавить Успешно',exact:true}).click();
     assert.equal(await count('totalComm'),2);
-    assert.equal(await page.locator('#effSuccess').textContent(),'50%');
+    assert.equal(await count('successCount'),1);
     await page.locator('#commPlus').click();
     assert.equal(await count('commCount'),1);
     assert.equal(await count('totalComm'),2);

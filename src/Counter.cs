@@ -259,6 +259,8 @@ internal sealed class CounterWindow : Form
                 // Буфер обмена бывает занят (RDP, менеджеры буфера на рабочих ПК): несколько попыток.
                 if (!string.IsNullOrEmpty(text) && text.Length <= 200000) { Clipboard.SetDataObject(text, true, 5, 100); Notify("Отчёт скопирован"); }
             }
+            else if (type == "update") Updater.Start(this);
+            else if (type == "openReleases") Updater.OpenReleasesPage();
             else if (type == "saveFile" && data.ContainsKey("content") && data.ContainsKey("name"))
             {
                 string name = Path.GetFileName(data["name"] as string);
@@ -288,6 +290,14 @@ internal sealed class CounterWindow : Form
     private void Notify(string message)
     {
         if (view.CoreWebView2 != null) view.CoreWebView2.PostWebMessageAsJson(json.Serialize(new { type = "toast", message = message }));
+    }
+
+    // Состояние обновления для диалога в интерфейсе. Вызывается в потоке окна.
+    internal void PostUpdate(object message)
+    {
+        try { if (!IsDisposed && !view.IsDisposed && view.CoreWebView2 != null) view.CoreWebView2.PostWebMessageAsJson(json.Serialize(message)); }
+        catch (InvalidOperationException) { } // Процесс WebView2 упал или окно закрывается.
+        catch (COMException) { }
     }
 
     [DllImport("dwmapi.dll")] private static extern int DwmSetWindowAttribute(IntPtr handle, int attribute, ref int value, int size);
