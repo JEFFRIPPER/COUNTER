@@ -47,20 +47,22 @@
   <div class="dashboard">
     <div class="main-column">
       <section class="card overview" aria-labelledby="overviewTitle">
-        <div class="eyebrow" id="overviewTitle">Сделано в час</div>
-        <div class="hero-row"><div><span class="hero-number" id="rateValue">0</span><div class="hero-caption" id="rateCaption">нажми «Начать», чтобы считать темп</div></div>
+        <div class="eyebrow" id="overviewTitle">Всего коммуникаций</div>
+        <div class="hero-row"><div><span class="hero-number" id="totalComm">0</span><div class="hero-caption">за текущую смену</div></div>
           <div class="hero-meta">
-            <div class="metric"><span class="metric-icon"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span><div><strong id="successCount">0</strong><small>успешно</small></div></div>
-            <div class="metric"><span class="metric-icon"><svg class="icon" aria-hidden="true"><use href="#i-chart"/></svg></span><div><strong id="totalComm">0</strong><small>всего</small></div></div>
+            <div class="metric"><span class="metric-icon"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span><div><strong id="effSuccess">0%</strong><small>успешность</small></div></div>
+            <div class="metric"><span class="metric-icon"><svg class="icon" aria-hidden="true"><use href="#i-trend"/></svg></span><div><strong id="rateValue">—</strong><small>в среднем / час</small></div></div>
           </div>
         </div>
         <div class="progress-label"><span id="effProgressLabel">Цель · 0 / 140</span><strong id="effPercent">0%</strong></div>
         <div class="progress-track" id="goalProgress" role="progressbar" aria-label="Выполнение цели" aria-valuemin="0" aria-valuemax="140" aria-valuenow="0"><div class="progress-fill" id="effProgressFill"></div></div>
         <div class="goal-note" id="effTarget">Осталось 140 коммуникаций</div>
       </section>
-      <section class="card detail-card" aria-labelledby="detailsTitle">
-        <div class="card-header"><h2 id="detailsTitle">Детализация</h2><button id="addBtn"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Категория</button></div>
-        <div id="itemsContainer"></div>
+      <section class="card communications" aria-labelledby="commTitle">
+        <div class="card-header"><h2 id="commTitle">Коммуникации</h2><svg class="icon" aria-hidden="true"><use href="#i-chart"/></svg></div>
+        <p class="subtle">Считается отдельно от детализации</p>
+        <div class="comm-counter"><button id="commMinus" class="counter-button outlined" aria-label="Уменьшить коммуникации">−</button><span class="comm-number" id="commCount">0</span><button id="commPlus" class="counter-button plus" aria-label="Добавить коммуникацию">+</button></div>
+        <div class="comm-actions"><button id="commEditBtn">Изменить</button><button id="commResetBtn">Обнулить</button></div>
       </section>
       <div class="bottom-actions">
         <button id="copyBtn" class="filled"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg>Копировать</button>
@@ -70,6 +72,10 @@
       </div>
     </div>
     <div class="side-column">
+      <section class="card detail-card" aria-labelledby="detailsTitle">
+        <div class="card-header"><h2 id="detailsTitle">Детализация</h2><button id="addBtn"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Категория</button></div>
+        <div id="itemsContainer"></div>
+      </section>
       <section class="card shift-card" aria-labelledby="shiftTitle">
         <div class="card-header"><h2 id="shiftTitle">Смена</h2><span class="status" id="shiftStatus" data-state="Не начата"><span class="status-dot"></span><span id="shiftStatusText">Не начата</span></span></div>
         <div class="timer" id="shiftTimerValue">00:00:00</div><div class="remaining" id="shiftRemainingValue">Осталось 08:00:00</div>
@@ -81,12 +87,6 @@
         <div class="schedule"><label class="field">Начало<input type="time" id="shiftStart" aria-label="Время начала смены"></label><label class="field">Конец по расписанию<input type="time" id="shiftEnd" aria-label="Время конца смены"></label></div>
         <label class="field notes-field">Заметки<textarea id="shiftNotes" placeholder="Что важно не забыть…" maxlength="2000"></textarea></label>
         <div class="rate-note" id="slowHoursEl"></div>
-      </section>
-      <section class="card communications" aria-labelledby="commTitle">
-        <div class="card-header"><h2 id="commTitle">Коммуникации</h2><svg class="icon" aria-hidden="true"><use href="#i-chart"/></svg></div>
-        <p class="subtle">Считается отдельно от детализации</p>
-        <div class="comm-counter"><button id="commMinus" class="counter-button outlined" aria-label="Уменьшить коммуникации">−</button><span class="comm-number" id="commCount">0</span><button id="commPlus" class="counter-button plus" aria-label="Добавить коммуникацию">+</button></div>
-        <div class="comm-actions"><button id="commEditBtn">Изменить</button><button id="commResetBtn">Обнулить</button></div>
       </section>
       <button id="historyBtn" class="tonal"><svg class="icon" aria-hidden="true"><use href="#i-history"/></svg>История смен</button>
     </div>
