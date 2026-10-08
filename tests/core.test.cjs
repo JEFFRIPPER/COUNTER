@@ -81,3 +81,34 @@ test('Default detail is Звонки and Успешно; the total follows Зв�
   const custom=C.normalize({counts:{Звонки:4,Перезвон:2}},['Звонки','Перезвон']);
   assert.equal(C.total(custom),4,'Other categories are part of Звонки');
 });
+test('Calls are tracked per hour and the map keeps the last 48 hours',()=>{
+  const s=C.normalize({hours:{'2026-10-08T09:00:00Z':3,broken:5,'2026-10-08T10:00:00Z':-2}});
+  C.track(s,2,Date.parse('2026-10-08T09:40:00Z'));C.track(s,-9,Date.parse('2026-10-08T11:10:00Z'));
+  assert.deepEqual({...s.hours},{'2026-10-08T09:00:00.000Z':5});
+  for(let i=0;i<60;i++)C.track(s,1,Date.parse('2026-10-01T00:00:00Z')+i*3600000);
+  assert.equal(Object.keys(s.hours).length,48);
+});
+test('Forecast uses the schedule, or 8 working hours without it',()=>{
+  const start=new Date(2026,9,8,9,0),now=new Date(2026,9,8,10,0).getTime();
+  const s=C.normalize({status:'Идёт',startTime:start.toISOString(),shiftEnd:'17:00',counts:{Звонки:10}});
+  const f=C.forecast(s,120,now);
+  assert.equal(f.projected,80);assert.equal(f.need,16);assert.equal(f.behind,5);
+  const free=C.forecast(C.normalize({status:'Идёт',startTime:start.toISOString(),counts:{Звонки:20}}),120,now);
+  assert.equal(free.projected,160);assert.equal(free.behind,0);
+  assert.equal(C.forecast(C.normalize({}),120,now),null);
+  assert.ok(C.forecast(s,120,start.getTime()+60000).early);
+});
+test('Records and the streak skip days off; an unfinished running day does not break it',()=>{
+  const e=(d,n,active=false)=>C.shiftEntry({date:d,total:n,counts:{Успешно:1},state:{hours:{[d]:n/10}}},active);
+  const list=[e('2026-10-02T15:00:00Z',150),e('2026-10-05T15:00:00Z',140),e('2026-10-06T15:00:00Z',141),e('2026-10-08T09:00:00Z',20,true)];
+  assert.deepEqual({...C.records(list,140)},{bestShift:150,bestHour:15,streak:3});
+  assert.equal(C.records([...list.slice(0,3),e('2026-10-07T15:00:00Z',90)],140).streak,0);
+});
+test('Period report groups by day and exports with Russian decimals',()=>{
+  const list=[{date:'2026-10-06T15:00:00Z',total:100,counts:{Успешно:25},comm:3,duration:28800000},{date:'2026-10-06T20:00:00Z',total:20,counts:{Успешно:5},comm:1,duration:3600000},{date:'2026-09-01T15:00:00Z',total:99,counts:{}}].map(h=>C.shiftEntry(h));
+  const r=C.report(list,Date.parse('2026-10-01T00:00:00Z'),Date.parse('2026-10-08T00:00:00Z'));
+  assert.equal(r.rows.length,1);assert.equal(r.sum.calls,120);assert.equal(r.sum.shifts,2);
+  const csv=C.reportCsv(r,120);
+  assert.ok(csv.includes('"2026-10-06";"2";"120";"30";"25,0";"4";"9,0";"13,3";"да"'));
+  assert.ok(csv.includes('"Итого";"2";"120";"30";"25,0";"4";"9,0";"13,3";"1 из 1"'));
+});
