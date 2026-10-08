@@ -206,11 +206,14 @@ async function session(url, options={}) {
   await keys.page.keyboard.press('Control+Alt+Digit2');
   check((await value(keys.page,'hotkeyPreview')).includes('уже у «Успешно»'),'duplicate combination is refused');
   await keys.page.keyboard.press('Control+Alt+KeyQ');await keys.page.locator('#hotkeySaveBtn').click();
-  check(await keys.page.evaluate(()=>{const m=nativeMessages[nativeMessages.length-1];return m.type==='hotkeys'&&m.keys.calls.vk===81&&m.keys.calls.mod===3;})&&JSON.parse(await keys.page.evaluate(()=>localStorage.getItem('counterHotkeys'))).calls.vk===81,'new combination is saved and registered');
+  // Сочетания отправляются в программу по событию close диалога — оно приходит асинхронно.
+  await keys.page.waitForFunction(()=>{const m=nativeMessages[nativeMessages.length-1];return m.type==='hotkeys'&&!!m.keys.calls;});
+  check(await keys.page.evaluate(()=>{const m=nativeMessages[nativeMessages.length-1];return m.keys.calls.vk===81&&m.keys.calls.mod===3;})&&JSON.parse(await keys.page.evaluate(()=>localStorage.getItem('counterHotkeys'))).calls.vk===81,'new combination is saved and registered');
   await keys.page.reload();await keys.page.locator('#settingsBtn').click();
   check(await keys.page.locator('[data-hotkey=calls]').textContent()==='Звонок: Ctrl+Alt+Q','combination survives restart');
   await keys.page.locator('[data-hotkey=success]').click();await keys.page.locator('#hotkeyOffBtn').click();
-  check(await keys.page.evaluate(()=>{const m=nativeMessages[nativeMessages.length-1];return m.type==='hotkeys'&&m.keys.success===null;}),'a hotkey can be turned off');
+  await keys.page.waitForFunction(()=>{const m=nativeMessages[nativeMessages.length-1];return m.type==='hotkeys'&&!!m.keys.calls;});
+  check(await keys.page.evaluate(()=>{const m=nativeMessages[nativeMessages.length-1];return m.keys.success===null;}),'a hotkey can be turned off');
   await keys.page.locator('#miniBtn').click();
   check(await keys.page.evaluate(()=>nativeMessages.some(m=>m.type==='mini'&&m.on===true))&&await keys.page.locator('#miniPanel').isVisible()&&await keys.page.locator('.app').isHidden(),'mini window asks the program to shrink and shows the compact view');
   await keys.page.setViewportSize({width:340,height:196});
