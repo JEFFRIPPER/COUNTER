@@ -78,17 +78,17 @@ function updateTimer(){
   const dur=C.duration(state),active=state.status==='Идёт'||state.status==='Пауза';setText('shiftTimerValue',C.fmtDuration(dur));const length=shiftHours()*3600000;setText('shiftRemainingValue',dur>=length?'Сверхурочно':'Осталось '+C.fmtDuration(length-dur));
   setText('shiftStatusText',state.status);$('shiftStatus').dataset.state=state.status;$('startShiftBtn').disabled=active;$('pauseShiftBtn').disabled=!active;$('endShiftBtn').disabled=!active;
   const paused=state.status==='Пауза'?'1':'0';if($('pauseShiftBtn').dataset.paused!==paused){$('pauseShiftBtn').dataset.paused=paused;$('pauseShiftBtn').innerHTML=icon(paused==='1'?'play':'pause')+'<span>'+(paused==='1'?'Продолжить':'Пауза')+'</span>';}
-  const rate=dur>=60000?C.total(state)/(dur/3600000):null;setText('rateValue',rate===null?'—':rate.toFixed(1));
+  const rate=dur>=60000?C.total(state)/(dur/3600000):null;setText('rateValue',rate===null?'—':rate.toFixed(1));setText('miniRate',(rate===null?'—':rate.toFixed(1))+' в час');
   // Прогноз к концу смены и сколько нужно в час, чтобы успеть к цели.
   const g=goal(),f=C.forecast(state,g,Date.now(),shiftHours());let text='',behind=false;
   if(f){if(f.early)text='Прогноз появится после 15 минут работы';else if(f.total>=g)text='Цель выполнена. К концу смены будет около '+f.projected;else if(f.left<60000)text='Время смены по расписанию закончилось';else{text='При таком темпе к концу смены: '+f.projected+' из '+g;if(f.need)text+='. Нужно '+f.need+' в час'+(f.need>f.rate?', это на '+Math.ceil(f.need-f.rate)+' больше текущего':'');behind=f.projected<g;}}
-  $('effForecast').hidden=!text;setText('effForecast',text);$('effForecast').dataset.behind=behind?'1':'0';
+  setText('miniForecast',!f||f.early?'':f.total>=g?'Цель выполнена':'К концу смены: '+f.projected+' из '+g+(f.need?' · нужно '+f.need+' в час':''));$('miniForecast').dataset.behind=behind?'1':'0';$('effForecast').hidden=!text;setText('effForecast',text);$('effForecast').dataset.behind=behind?'1':'0';
   setText('slowHoursEl',!f?'Таймер не учитывает паузы':f.early?'Темп появится после 15 минут работы':f.total>=g?'Цель выполнена':f.behind>0?'Отстаёшь от графика цели на '+f.behind:'Идёшь в графике цели');
   if(C.hourKey(Date.now())!==chartHour)renderHours();
 }
 function render(){
   const total=C.total(state);setText('totalComm',total,true);setText('commCount',state.commCount,true);setText('effSuccess',total?Math.round(Math.min(state.counts['Успешно']||0,total)/total*1000)/10+'%':'0%');
-  const g=goal();setText('effProgressLabel','Цель · '+total+' / '+g);const progress=Math.min(total/g*100,100);setText('effPercent',Math.round(progress)+'%');$('effProgressFill').style.width=progress+'%';$('goalProgress').setAttribute('aria-valuemax',g);$('goalProgress').setAttribute('aria-valuenow',Math.min(total,g));setText('effTarget',total>=g?'Цель выполнена. Отличная работа!':'Осталось '+(g-total)+' '+plural(g-total,'звонок','звонка','звонков'));setText('goalBtn','Цель смены: '+g);for(const b of document.querySelectorAll('[data-hours]'))b.setAttribute('aria-pressed',Number(b.dataset.hours)===shiftHours());
+  const g=goal();setText('effProgressLabel','Цель · '+total+' / '+g);const progress=Math.min(total/g*100,100);setText('effPercent',Math.round(progress)+'%');$('effProgressFill').style.width=progress+'%';$('goalProgress').setAttribute('aria-valuemax',g);$('goalProgress').setAttribute('aria-valuenow',Math.min(total,g));setText('effTarget',total>=g?'Цель выполнена. Отличная работа!':'Осталось '+(g-total)+' '+plural(g-total,'звонок','звонка','звонков'));setText('goalBtn','Цель смены: '+g);setText('miniTotal',total,mini);setText('miniGoal','/ '+g);$('miniFill').style.width=progress+'%';setText('miniSuccessCount',state.itemOrder.includes('Успешно')?state.counts['Успешно']:'—');setText('miniCommCount',state.commCount);setText('miniSuccess','успешно '+$('effSuccess').textContent);for(const b of document.querySelectorAll('[data-hours]'))b.setAttribute('aria-pressed',Number(b.dataset.hours)===shiftHours());
   $('commMinus').disabled=state.commCount===0;$('commPlus').disabled=state.commCount>=1e9;$('undoBtn').disabled=undoStates.length<2;
   for(const [id,value] of [['shiftStart',state.shiftStart],['shiftEnd',state.shiftEnd]])if(document.activeElement!==$(id))$(id).value=value;
   renderItems();renderHours();renderRecords();updateTimer();setText('statsView',reportText());if(total>=g&&!lastGoal)celebrate();lastGoal=total>=g;
@@ -184,13 +184,43 @@ function onUpdate(d){
   else if(d.state==='error'){setText('updateTitle','Не удалось обновить');setText('updateMessage',String(d.message||'Неизвестная ошибка')+'\n\nМожно повторить или скачать новую версию вручную со страницы релизов.');updateView('error');if(!document.querySelector('dialog[open]'))showDialog('updateDialog');if($('updateDialog').open)$('updateNowBtn').focus();}
 }
 // Проверка по кнопке: без перезапуска программы.
-if(window.chrome?.webview){$('updatesSection').hidden=false;$('updatesActions').hidden=false;}
+if(window.chrome?.webview)for(const id of ['updatesSection','updatesActions','hotkeysSection','hotkeysActions','miniBtn'])$(id).hidden=false;
 $('checkUpdateBtn').onclick=()=>{$('settingsDialog').close();if(updateBusy){showDialog('updateDialog');return;}toast('Проверяем обновления…');window.chrome?.webview?.postMessage({type:'checkUpdate'});};
 $('updateBtn').onclick=()=>{if(!$('updateDialog').open)showDialog('updateDialog');if(!updateBusy)$('updateNowBtn').focus();};
 $('updateNowBtn').onclick=()=>{if(updateBusy||!window.chrome?.webview)return;setText('updateTitle','Обновляем счётчик');setText('updateMessage','Окно можно скрыть и работать дальше. После загрузки счётчик перезапустится сам, данные сохранятся.');updateView('progress',-1);window.chrome.webview.postMessage({type:'update'});};
 $('updateLaterBtn').onclick=()=>$('updateDialog').close();
 $('updateManualBtn').onclick=()=>window.chrome?.webview?.postMessage({type:'openReleases'});
-if(window.chrome?.webview)window.chrome.webview.addEventListener('message',e=>{if(e.data?.type==='toast')toast(e.data.message);else if(e.data?.type==='update')onUpdate(e.data);});
+// +1 из горячей клавиши или мини-окна. «Успешно» и «Звонки» независимы, как и кнопки в детализации.
+function bump(action){
+  if(action==='comm'){if(state.commCount<1e9)change(()=>state.commCount++);return true;}
+  const name=action==='calls'?C.calls:'Успешно';if(!state.itemOrder.includes(name)){toast('Нет категории «'+name+'»');return false;}
+  if(state.counts[name]<1e9)change(()=>state.counts[name]++);return true;
+}
+// Глобальные горячие клавиши регистрирует программа; по умолчанию Ctrl+Alt+1, 2, 3.
+const hotkeyNames={calls:'Звонок',success:'Успешно',comm:'Коммуникация'},hotkeyDefaults={calls:{mod:3,vk:49},success:{mod:3,vk:50},comm:{mod:3,vk:51}};
+let hotkeys=C.clone(hotkeyDefaults),hotkeysFailed=[],hotkeyEdit=null,hotkeyDraft=null,hotkeyReport=false,mini=false;
+function validKey(k){return k===null||!!k&&typeof k==='object'&&Number.isInteger(k.mod)&&(k.mod&3)>0&&k.mod<=7&&Number.isInteger(k.vk)&&k.vk>0&&k.vk<255;}
+function keyLabel(k){if(!k)return 'выключено';const parts=[],vk=k.vk;if(k.mod&2)parts.push('Ctrl');if(k.mod&1)parts.push('Alt');if(k.mod&4)parts.push('Shift');parts.push(vk>=48&&vk<=57||vk>=65&&vk<=90?String.fromCharCode(vk):vk>=96&&vk<=105?'Num '+(vk-96):vk>=112&&vk<=135?'F'+(vk-111):'#'+vk);return parts.join('+');}
+// По коду клавиши, а не символу: сочетание одинаково в русской и английской раскладке.
+function keyFromEvent(e){const m=/^Key([A-Z])$/.exec(e.code)||/^Digit(\d)$/.exec(e.code),n=/^Numpad(\d)$/.exec(e.code),f=/^F(\d{1,2})$/.exec(e.code),mod=(e.altKey?1:0)|(e.ctrlKey?2:0)|(e.shiftKey?4:0);let vk=m?m[1].charCodeAt(0):n?96+Number(n[1]):f&&+f[1]>=1&&+f[1]<=24?111+Number(f[1]):0;return vk&&(mod&3)?{mod,vk}:null;}
+function renderHotkeys(){for(const b of document.querySelectorAll('[data-hotkey]')){const a=b.dataset.hotkey;b.textContent=hotkeyNames[a]+': '+keyLabel(hotkeys[a])+(hotkeysFailed.includes(a)&&hotkeys[a]?' (занято)':'');}}
+function sendHotkeys(report){hotkeyReport=!!report;window.chrome?.webview?.postMessage({type:'hotkeys',keys:hotkeys});}
+function onHotkeys(d){hotkeysFailed=Array.isArray(d.failed)?d.failed.filter(a=>own(hotkeyNames,a)):[];renderHotkeys();if(hotkeyReport&&hotkeysFailed.length)toast('Сочетание '+hotkeysFailed.map(a=>keyLabel(hotkeys[a])+' («'+hotkeyNames[a]+'»)').join(', ')+' занято другой программой. Выбери другое в настройках.',7000);hotkeyReport=false;}
+for(const b of document.querySelectorAll('[data-hotkey]'))b.onclick=()=>{hotkeyEdit=b.dataset.hotkey;hotkeyDraft=null;$('settingsDialog').close();setText('hotkeyTitle','Горячая клавиша: '+hotkeyNames[hotkeyEdit]);setText('hotkeyPreview',keyLabel(hotkeys[hotkeyEdit]));$('hotkeySaveBtn').disabled=true;
+  // Пока выбираем сочетание, программа их не перехватывает, иначе нажатие засчитается как звонок.
+  window.chrome?.webview?.postMessage({type:'hotkeys',keys:{}});showDialog('hotkeyDialog');$('hotkeyPreview').focus();};
+$('hotkeyPreview').addEventListener('keydown',e=>{if(e.key==='Escape'||e.key==='Tab')return;e.preventDefault();if(['Control','Alt','Shift','Meta','AltGraph'].includes(e.key))return;const k=keyFromEvent(e);$('hotkeySaveBtn').disabled=true;hotkeyDraft=null;
+  if(!k){setText('hotkeyPreview','Нужен Ctrl или Alt + клавиша');return;}const other=Object.keys(hotkeyNames).find(a=>a!==hotkeyEdit&&hotkeys[a]&&hotkeys[a].mod===k.mod&&hotkeys[a].vk===k.vk);
+  if(other){setText('hotkeyPreview',keyLabel(k)+' уже у «'+hotkeyNames[other]+'»');return;}hotkeyDraft=k;setText('hotkeyPreview',keyLabel(k));$('hotkeySaveBtn').disabled=false;});
+function saveHotkey(k){hotkeys[hotkeyEdit]=k;write('counterHotkeys',JSON.stringify(hotkeys));hotkeyEdit=null;$('hotkeyDialog').close();renderHotkeys();toast(k?'Сочетание сохранено: '+keyLabel(k):'Горячая клавиша отключена');}
+$('hotkeySaveBtn').onclick=()=>{if(hotkeyDraft)saveHotkey(hotkeyDraft);};$('hotkeyOffBtn').onclick=()=>saveHotkey(null);$('hotkeyCancelBtn').onclick=()=>$('hotkeyDialog').close();
+$('hotkeyDialog').addEventListener('close',()=>sendHotkeys(true));
+// Мини-окно: программа делает окно маленьким и поверх всех; здесь — компактный вид с главными цифрами и кнопками.
+function setMini(on){mini=!!on;document.documentElement.dataset.mini=mini?'1':'0';$('miniPanel').hidden=!mini;}
+$('miniBtn').onclick=()=>{setMini(true);window.chrome?.webview?.postMessage({type:'mini',on:true});};
+$('miniExitBtn').onclick=()=>{setMini(false);window.chrome?.webview?.postMessage({type:'mini',on:false});};
+$('miniCallsBtn').onclick=()=>bump('calls');$('miniSuccessBtn').onclick=()=>bump('success');$('miniCommBtn').onclick=()=>bump('comm');
+if(window.chrome?.webview)window.chrome.webview.addEventListener('message',e=>{const d=e.data,type=d&&d.type;if(type==='toast')toast(d.message);else if(type==='update')onUpdate(d);else if(type==='hotkeys')onHotkeys(d);else if(type==='mini')setMini(d.on===true);else if(type==='hotkey'&&own(hotkeyNames,d.action)&&bump(d.action)&&!mini)toast(hotkeyNames[d.action]+' +1',1200);});
 const legacy=read('commStatsData',null);
 if(legacy&&legacy.counts&&!read('commStatsData_default',null)&&!read('commLegacyMigrated',false)){
   const oldProfiles=read('commProfiles',{}),migrated=Object.create(null);
@@ -211,6 +241,6 @@ if(!read('commCallsMigrated',false)){
   }
   write('commProfiles',JSON.stringify(profiles));write('commCallsMigrated','true');
 }
-let last;try{last=localStorage.getItem('commLastProfile');sound=localStorage.getItem('counterSound')==='on';paceOn=localStorage.getItem('counterPace')!=='off';applyEffects(localStorage.getItem('counterEffects'));applyTheme(localStorage.getItem('commStatsTheme')==='light'?'light':'dark');}catch{applyEffects('auto');applyTheme('dark');}renderSound();renderPace();switchProfile(own(profiles,last)?last:Object.keys(profiles)[0]);
+let last;try{last=localStorage.getItem('commLastProfile');sound=localStorage.getItem('counterSound')==='on';paceOn=localStorage.getItem('counterPace')!=='off';const savedKeys=read('counterHotkeys',null);if(savedKeys&&typeof savedKeys==='object')for(const a of Object.keys(hotkeyNames))if(own(savedKeys,a)&&validKey(savedKeys[a]))hotkeys[a]=savedKeys[a];applyEffects(localStorage.getItem('counterEffects'));applyTheme(localStorage.getItem('commStatsTheme')==='light'?'light':'dark');}catch{applyEffects('auto');applyTheme('dark');}renderSound();renderPace();renderHotkeys();if(window.chrome?.webview)sendHotkeys(true);switchProfile(own(profiles,last)?last:Object.keys(profiles)[0]);
 setInterval(()=>{updateTimer();if(Date.now()-lastPaceCheck>=60000){lastPaceCheck=Date.now();checkPace();}if(['Идёт','Пауза'].includes(state.status)){const end=C.scheduledEnd(state);if(end!==null&&Date.now()>=end&&end!==skipAutoFinish)finishShift(true,end);}},1000);
 })();

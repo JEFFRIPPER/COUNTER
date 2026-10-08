@@ -125,6 +125,11 @@ internal sealed class CounterWindow : Form
     private readonly System.Windows.Forms.Timer smokeTimeout = new System.Windows.Forms.Timer { Interval = 25000 };
     private readonly System.Windows.Forms.Timer updateTimer = new System.Windows.Forms.Timer { Interval = 3600000 }; // Проверка обновлений раз в час.
     private int smokeStage;
+    private readonly Dictionary<int, string> hotkeys = new Dictionary<int, string>();
+    private bool mini;
+    private Rectangle normalBounds;
+    private Size normalMinimum;
+    private Point? miniLocation;
 
     internal CounterWindow()
     {
@@ -262,6 +267,8 @@ internal sealed class CounterWindow : Form
                 if (!string.IsNullOrEmpty(text) && text.Length <= 200000) { Clipboard.SetDataObject(text, true, 5, 100); Notify("Отчёт скопирован"); }
             }
             else if (type == "update") Updater.Start(this);
+            else if (type == "hotkeys") SetHotkeys(data);
+            else if (type == "mini") SetMini(data.ContainsKey("on") && data["on"] is bool && (bool)data["on"]);
             else if (type == "attention")
             {
                 // Напоминание о темпе: мигает кнопка на панели задач, пока окно не откроют.
@@ -299,6 +306,74 @@ internal sealed class CounterWindow : Form
         catch (Exception) { Notify("Не удалось выполнить действие. Попробуй ещё раз."); }
     }
 
+    // Глобальные сочетания: работают и при свёрнутом окне. Занятые другой программой возвращаются в интерфейс.
+    private void SetHotkeys(Dictionary<string, object> data)
+    {
+        foreach (int id in hotkeys.Keys) UnregisterHotKey(Handle, id);
+        hotkeys.Clear();
+        var failed = new List<string>();
+        var keys = data.ContainsKey("keys") ? data["keys"] as Dictionary<string, object> : null;
+        if (keys != null)
+        {
+            int next = 1;
+            foreach (KeyValuePair<string, object> pair in keys)
+            {
+                var key = pair.Value as Dictionary<string, object>;
+                if (key == null || !key.ContainsKey("mod") || !(key["mod"] is int) || !key.ContainsKey("vk") || !(key["vk"] is int) || pair.Key.Length > 20 || next > 8) continue;
+                int mod = (int)key["mod"] & 7, vk = (int)key["vk"];
+                // MOD_ALT = 1, MOD_CONTROL = 2, MOD_SHIFT = 4; MOD_NOREPEAT = 0x4000 — удержание клавиши не повторяет нажатие.
+                if (mod != 0 && vk > 0 && vk < 255 && RegisterHotKey(Handle, next, (uint)(mod | 0x4000), (uint)vk)) hotkeys[next] = pair.Key;
+                else failed.Add(pair.Key);
+                next++;
+            }
+        }
+        PostUpdate(new { type = "hotkeys", failed = failed.ToArray() });
+    }
+
+    // Мини-окно: маленькое окно поверх всех в углу экрана; крестик возвращает обычный вид.
+    private void SetMini(bool on)
+    {
+        if (on == mini) return;
+        mini = on;
+        if (on)
+        {
+            if (WindowState != FormWindowState.Normal) WindowState = FormWindowState.Normal;
+            normalBounds = Bounds;
+            normalMinimum = MinimumSize;
+            MinimumSize = Size.Empty;
+            float scale = DeviceDpi / 96f;
+            Size size = SizeFromClientSize(new Size((int)(340 * scale), (int)(196 * scale)));
+            Rectangle area = Screen.FromControl(this).WorkingArea;
+            Point location = new Point(area.Right - size.Width - (int)(16 * scale), area.Bottom - size.Height - (int)(16 * scale));
+            if (miniLocation.HasValue)
+                foreach (Screen screen in Screen.AllScreens)
+                    if (screen.WorkingArea.Contains(miniLocation.Value)) { location = miniLocation.Value; break; }
+            Bounds = new Rectangle(location, size);
+            TopMost = true;
+        }
+        else
+        {
+            miniLocation = Location;
+            TopMost = false;
+            MinimumSize = normalMinimum;
+            Bounds = normalBounds;
+        }
+        PostUpdate(new { type = "mini", on = on });
+    }
+
+    protected override void WndProc(ref Message m)
+    {
+        if (m.Msg == 0x0312) // WM_HOTKEY
+        {
+            string action;
+            if (hotkeys.TryGetValue(m.WParam.ToInt32(), out action)) PostUpdate(new { type = "hotkey", action = action });
+            return;
+        }
+        // Крестик или Alt+F4 в мини-окне возвращают обычное окно; программное закрытие (обновление) не перехватывается.
+        if (mini && m.Msg == 0x0112 && (m.WParam.ToInt64() & 0xFFF0) == 0xF060) { SetMini(false); return; }
+        base.WndProc(ref m);
+    }
+
     private void Notify(string message)
     {
         if (view.CoreWebView2 != null) view.CoreWebView2.PostWebMessageAsJson(json.Serialize(new { type = "toast", message = message }));
@@ -314,6 +389,8 @@ internal sealed class CounterWindow : Form
 
     [StructLayout(LayoutKind.Sequential)]
     private struct FlashInfo { public uint Size; public IntPtr Handle; public uint Flags; public uint Count; public uint Timeout; }
+    [DllImport("user32.dll")] private static extern bool RegisterHotKey(IntPtr handle, int id, uint modifiers, uint key);
+    [DllImport("user32.dll")] private static extern bool UnregisterHotKey(IntPtr handle, int id);
     [DllImport("user32.dll")] private static extern bool FlashWindowEx(ref FlashInfo info);
     [DllImport("dwmapi.dll")] private static extern int DwmSetWindowAttribute(IntPtr handle, int attribute, ref int value, int size);
 }
