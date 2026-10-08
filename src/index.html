@@ -29,6 +29,8 @@
 <symbol id="i-undo" viewBox="0 0 24 24"><path d="m9 4-6 6 6 6M3 10h11a6 6 0 0 1 0 12"/></symbol>
 <symbol id="i-reset" viewBox="0 0 24 24"><path d="M20 8A9 9 0 1 0 21 15M20 3v5h-5"/></symbol>
 <symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="19" r="1" fill="currentColor"/></symbol>
+<symbol id="i-update" viewBox="0 0 24 24"><path d="M12 15V4m-4.5 4.5L12 4l4.5 4.5M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/></symbol>
+<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol>
 <symbol id="i-drag" viewBox="0 0 24 24"><path d="M8 5h.1M16 5h.1M8 12h.1M16 12h.1M8 19h.1M16 19h.1" stroke-width="3"/></symbol>
 </defs></svg>
 <main class="app">
@@ -36,6 +38,7 @@
     <div class="brand-mark"><svg class="icon" aria-hidden="true"><use href="#i-chart"/></svg></div>
     <div><h1>Счётчик <span class="version">__COUNTER_VERSION__</span></h1><p class="subtitle">Твоя смена. Твой результат.</p></div>
     <div class="top-actions">
+      <button id="updateBtn" class="scarlet update-chip" hidden title="Установить новую версию"><svg class="icon" aria-hidden="true"><use href="#i-update"/></svg><span>Обновить</span></button>
       <label class="profile-picker"><svg class="icon" aria-hidden="true"><use href="#i-user"/></svg><select id="profileSelect" aria-label="Профиль"></select></label>
       <button id="themeToggle" class="icon-button outlined" aria-label="Включить тёмную тему" title="Переключить тему"><svg class="icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
       <button id="settingsBtn" class="icon-button outlined" aria-label="Настройки и профили" title="Настройки и профили"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg></button>
@@ -95,6 +98,7 @@
 <dialog id="settingsDialog"><div class="dialog-content"><h2>Настройки</h2><p class="dialog-message">Профили, резервная копия и внешний вид</p><div class="settings-section">Профиль</div><div class="settings-actions"><button id="profileAddBtn">Создать профиль</button><button id="profileRenameBtn">Переименовать профиль</button><button id="profileDelBtn" class="danger">Удалить профиль</button></div><div class="settings-section">Данные и звук</div><div class="settings-actions"><button id="backupBtn">Сохранить резервную копию</button><button id="importBtn">Загрузить резервную копию</button><button id="soundBtn" aria-pressed="false">Звук: выключен</button></div><div class="settings-section">Внешний вид</div><div class="settings-actions"><button id="effectsBtn" aria-pressed="false">Эффекты: полные</button></div><div class="dialog-actions"><button class="filled" id="settingsCloseBtn">Готово</button></div></div></dialog>
 <dialog id="historyDialog"><div class="dialog-content"><h2>История смен</h2><p class="dialog-message" id="historySubtitle"></p><div id="historyList"></div><div class="dialog-actions"><button class="filled" id="historyCloseBtn">Закрыть</button></div></div></dialog>
 <dialog id="itemDialog"><div class="dialog-content"><h2 id="itemDialogTitle"></h2><div class="settings-actions"><button id="itemEditBtn">Изменить количество</button><button id="itemDeleteBtn" class="danger">Удалить категорию</button></div><div class="dialog-actions"><button id="itemCloseBtn">Закрыть</button></div></div></dialog>
+<dialog id="updateDialog" aria-labelledby="updateTitle" aria-describedby="updateMessage"><div class="dialog-content update-content"><div class="update-icon"><svg class="icon" aria-hidden="true"><use href="#i-update"/></svg></div><h2 id="updateTitle">Доступно обновление</h2><div class="update-versions"><span id="updateCurrent"></span><svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg><strong id="updateVersion"></strong></div><p class="dialog-message" id="updateMessage"></p><div class="update-progress" id="updateProgress" role="progressbar" aria-label="Загрузка обновления" aria-valuemin="0" aria-valuemax="100" hidden><div class="update-progress-fill" id="updateProgressFill"></div></div><div class="dialog-actions"><button type="button" id="updateManualBtn" hidden>Скачать вручную</button><button type="button" id="updateLaterBtn">Позже</button><button type="button" id="updateNowBtn" class="scarlet" autofocus><svg class="icon" aria-hidden="true"><use href="#i-update"/></svg><span id="updateNowText">Обновить</span></button></div></div></dialog>
 <input type="file" id="importFile" accept="application/json,.json" hidden>
 <div class="snackbar" id="toast" role="status" aria-live="polite"></div>
 <script id="counter-core">

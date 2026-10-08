@@ -20,7 +20,10 @@ internal static class Updater
     internal const string DisableArgument = "--no-update-check";
     internal static int BrowserProcessId;
     private static bool relaunchPending;
+    private static Release available;
+    private static bool downloading;
     private const string AssetName = "COUNTER.exe";
+    private const long MaxDownloadSize = 200L * 1024 * 1024;
     private const string ReleasesPage = "https://github.com/" + Repository + "/releases/latest";
 
     private static string ExecutablePath { get { return Application.ExecutablePath; } }
@@ -39,7 +42,8 @@ internal static class Updater
         TryDelete(NewPath);
     }
 
-    internal static void CheckInBackground(Form owner)
+    // Нашли новую версию: окно показывает её в интерфейсе (диалог MD3 и алая кнопка «Обновить»).
+    internal static void CheckInBackground(CounterWindow owner)
     {
         ThreadPool.QueueUserWorkItem(delegate
         {
@@ -47,44 +51,66 @@ internal static class Updater
             try { release = FetchLatest(); }
             catch (Exception) { return; } // Нет сети или GitHub недоступен: работаем как обычно.
             if (release == null || release.Version <= CurrentVersion) return;
-            try { owner.BeginInvoke(new Action(delegate { Offer(owner, release); })); }
+            try
+            {
+                owner.BeginInvoke(new Action(delegate
+                {
+                    if (owner.IsDisposed) return;
+                    available = release;
+                    owner.PostUpdate(new { type = "update", state = "available", version = Format(release.Version), current = Format(CurrentVersion) });
+                }));
+            }
             catch (InvalidOperationException) { } // Окно уже закрыто.
         });
     }
 
-    private static void Offer(Form owner, Release release)
+    // Пользователь нажал «Обновить». Вызывается в потоке окна.
+    internal static void Start(CounterWindow owner)
     {
-        if (owner.IsDisposed) return;
-        string question = "Доступна новая версия COUNTER " + Format(release.Version) + " (установлена " + Format(CurrentVersion) + ").\n\n" +
-            "Обновить сейчас? Счётчик перезапустится, сохранённые данные не изменятся.";
-        if (MessageBox.Show(owner, question, "Обновление COUNTER", MessageBoxButtons.YesNo, MessageBoxIcon.Information) != DialogResult.Yes) return;
-        owner.UseWaitCursor = true;
+        if (available == null || downloading) return;
+        downloading = true;
+        Release release = available;
         ThreadPool.QueueUserWorkItem(delegate
         {
             string error = null;
-            try { Download(release); }
+            int reported = -2;
+            try
+            {
+                Download(release, delegate(int percent)
+                {
+                    if (percent == reported) return;
+                    reported = percent;
+                    try { owner.BeginInvoke(new Action(delegate { if (!owner.IsDisposed) owner.PostUpdate(new { type = "update", state = "progress", percent = percent }); })); }
+                    catch (InvalidOperationException) { }
+                });
+            }
             catch (Exception exception) { error = exception.Message; TryDelete(NewPath); }
             try { owner.BeginInvoke(new Action(delegate { Finish(owner, error); })); }
             catch (InvalidOperationException) { TryDelete(NewPath); }
         });
     }
 
-    private static void Finish(Form owner, string error)
+    private static void Finish(CounterWindow owner, string error)
     {
-        owner.UseWaitCursor = false;
+        downloading = false;
+        if (owner.IsDisposed) { TryDelete(NewPath); return; }
         if (error == null)
         {
             try { Replace(); }
-            catch (Exception exception) { error = exception.Message; }
+            catch (Exception exception) { error = exception.Message; TryDelete(NewPath); }
         }
         if (error != null)
         {
-            MessageBox.Show(owner, "Не удалось обновить счётчик.\n\n" + error + "\n\nНовую версию можно скачать вручную:\n" + ReleasesPage,
-                "Обновление COUNTER", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            owner.PostUpdate(new { type = "update", state = "error", message = error });
             return;
         }
         relaunchPending = true; // Новая версия стартует из Main, когда WebView2 этой копии закроется.
         owner.Close();
+    }
+
+    internal static void OpenReleasesPage()
+    {
+        Process.Start(new ProcessStartInfo(ReleasesPage) { UseShellExecute = true });
     }
 
     // Ждём выхода браузерного процесса WebView2 этой копии: иначе новая копия может
@@ -126,17 +152,39 @@ internal static class Updater
         return release.ExecutableUrl != null && release.ChecksumUrl != null ? release : null;
     }
 
-    private static void Download(Release release)
+    private static void Download(Release release, Action<int> progress)
     {
         string expected = DownloadText(release.ChecksumUrl).Trim().Split(' ', '\t', '\r', '\n')[0].ToLowerInvariant();
         if (expected.Length != 64) throw new InvalidDataException("Файл контрольной суммы повреждён.");
-        byte[] bytes;
-        using (var client = CreateClient()) bytes = client.DownloadData(release.ExecutableUrl);
+        byte[] bytes = DownloadData(release.ExecutableUrl, progress);
         string actual;
         using (var hash = SHA256.Create()) actual = BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-", "").ToLowerInvariant();
         if (actual != expected) throw new InvalidDataException("Контрольная сумма скачанного файла не совпала.");
         if (bytes.Length < 2 || bytes[0] != 'M' || bytes[1] != 'Z') throw new InvalidDataException("Скачанный файл не является программой.");
         File.WriteAllBytes(NewPath, bytes);
+    }
+
+    // Читаем по частям, чтобы показывать процент загрузки. -1: размер неизвестен.
+    private static byte[] DownloadData(string url, Action<int> progress)
+    {
+        using (var client = CreateClient())
+        using (Stream stream = client.OpenRead(url))
+        using (var buffer = new MemoryStream())
+        {
+            long total;
+            if (!long.TryParse(client.ResponseHeaders[HttpResponseHeader.ContentLength], out total) || total <= 0) total = -1;
+            if (total > MaxDownloadSize) throw new InvalidDataException("Файл обновления слишком большой.");
+            progress(total > 0 ? 0 : -1);
+            var chunk = new byte[81920];
+            int read;
+            while ((read = stream.Read(chunk, 0, chunk.Length)) > 0)
+            {
+                buffer.Write(chunk, 0, read);
+                if (buffer.Length > MaxDownloadSize) throw new InvalidDataException("Файл обновления слишком большой.");
+                if (total > 0) progress((int)Math.Min(100, buffer.Length * 100 / total));
+            }
+            return buffer.ToArray();
+        }
     }
 
     // Windows позволяет переименовать запущенный EXE, но не перезаписать его.

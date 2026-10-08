@@ -51,6 +51,19 @@ html[data-effects="full"] .topbar,html[data-effects="full"] .main-column>*,html[
 html[data-effects="full"] .main-column>:nth-child(2){animation-delay:60ms}html[data-effects="full"] .main-column>:nth-child(3){animation-delay:120ms}html[data-effects="full"] .side-column>:nth-child(1){animation-delay:90ms}html[data-effects="full"] .side-column>:nth-child(2){animation-delay:150ms}html[data-effects="full"] .side-column>:nth-child(3){animation-delay:210ms}
 html[data-effects="full"] .item-row.enter{animation:enter-row 350ms var(--easing-emphasized)}
 ::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
+/* Обновление: алая кнопка MD3 и диалог с полосой загрузки. */
+.scarlet{background:linear-gradient(135deg,var(--accent) 0%,#e01000 50%,#b00000 100%);color:#fff;box-shadow:0 0 0 1px #ff240033,0 3px 14px -3px #ff2400b3}.scarlet:hover:not(:disabled){box-shadow:0 0 0 1px #ff240059,0 6px 22px -3px #ff2400d9}.scarlet:active:not(:disabled){border-radius:12px}.scarlet:disabled{opacity:.82;box-shadow:none;cursor:progress}
+html[data-effects="full"] .update-chip:not([hidden]){animation:scarlet-pulse 2.4s var(--easing) 3}
+@keyframes scarlet-pulse{50%{box-shadow:0 0 0 4px #ff240026,0 0 26px 2px #ff2400a6}}
+.update-chip{padding:0 18px 0 14px}
+.update-content{text-align:center}.update-content .dialog-actions{flex-wrap:wrap}
+.update-icon{width:56px;height:56px;margin:0 auto 14px;border-radius:18px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--accent),#e01000 50%,#b00000);box-shadow:0 6px 22px -6px #ff2400cc}.update-icon .icon{width:28px;height:28px}
+.update-versions{display:inline-flex;align-items:center;gap:10px;margin:0 auto 14px;padding:6px 14px;border-radius:12px;background:var(--surface-container);font-variant-numeric:tabular-nums;color:var(--on-surface-variant)}.update-versions strong{color:var(--primary)}html[data-theme="dark"] .update-versions strong{color:var(--accent)}.update-versions .icon{width:16px;height:16px}
+.update-progress{height:6px;border-radius:6px;background:var(--surface-highest);overflow:hidden;margin:0 0 6px;text-align:left}.update-progress-fill{height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,#c80000,var(--accent));box-shadow:0 0 10px #ff240099;transition:width 250ms var(--easing)}
+.update-progress.indeterminate .update-progress-fill{width:40%;animation:update-slide 1.3s var(--easing) infinite}
+@keyframes update-slide{from{transform:translateX(-100%)}to{transform:translateX(250%)}}
+html[data-effects="lite"] .update-progress.indeterminate .update-progress-fill{width:100%;opacity:.55}
+@media(prefers-reduced-motion:reduce){.update-progress.indeterminate .update-progress-fill{width:100%;opacity:.55;animation:none}}
 @media(max-width:800px){.app{padding:20px}.dashboard{grid-template-columns:minmax(0,1.25fr) minmax(280px,1fr);gap:14px}.card{padding:20px}.hero-number{font-size:64px}.hero-meta{min-width:94px}.hero-row{gap:10px!important}.topbar{gap:9px}.profile-picker select{width:110px}.subtitle{font-size:11px}.version{display:none}.timer{font-size:36px}.detail-card{padding:20px 14px 12px}}
 @media(max-width:640px){.app{padding:18px 14px}.topbar{flex-wrap:wrap;margin-bottom:18px}.top-actions{width:100%;margin:10px 0 0}.profile-picker{flex:1}.profile-picker select{width:100%}.dashboard{grid-template-columns:1fr}.side-column{grid-row:2}.hero-number{font-size:72px}.card{padding:22px}.detail-card{padding:22px 16px 12px}.hero-meta{min-width:128px}.footer span:last-child{display:none}.timer{font-size:44px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}.ripple,.celebration{display:none}}
