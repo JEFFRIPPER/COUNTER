@@ -202,7 +202,7 @@ internal sealed class CounterWindow : Form
             if (smokeStage == 0)
             {
                 smokeStage = 1;
-                string result = await view.CoreWebView2.ExecuteScriptAsync("(function(){if(document.querySelectorAll('.item-row').length!==2)return false;document.querySelector('[data-action=plus]').click();document.getElementById('commPlus').click();document.getElementById('startShiftBtn').click();document.getElementById('pauseShiftBtn').click();var note=document.getElementById('shiftNotes');note.value='smoke';note.dispatchEvent(new Event('input'));var d=JSON.parse(localStorage.getItem('commStatsData_default'));return document.getElementById('totalComm').textContent==='1'&&d.commCount===1&&d.status==='Пауза'&&!!d.pauseStart&&d.notes==='smoke';})()");
+                string result = await view.CoreWebView2.ExecuteScriptAsync("(function(){if(document.querySelectorAll('.item-row').length!==2)return false;document.querySelector('[data-action=plus]').click();document.getElementById('commPlus').click();document.getElementById('startShiftBtn').click();document.getElementById('pauseShiftBtn').click();var d=JSON.parse(localStorage.getItem('commStatsData_default'));return document.getElementById('totalComm').textContent==='1'&&d.commCount===1&&d.status==='Пауза'&&!!d.pauseStart&&Object.keys(d.hours||{}).length===1;})()");
                 if (result != "true") { Close(); return; }
                 smokeStage = 2;
                 view.CoreWebView2.Reload();
@@ -210,7 +210,7 @@ internal sealed class CounterWindow : Form
             else if (smokeStage == 2)
             {
                 smokeStage = 3;
-                string result = await view.CoreWebView2.ExecuteScriptAsync("(function(){var d=JSON.parse(localStorage.getItem('commStatsData_default'));return document.getElementById('totalComm').textContent==='1'&&document.getElementById('commCount').textContent==='1'&&document.getElementById('shiftStatusText').textContent==='Пауза'&&d.notes==='smoke'&&!!d.pauseStart;})()");
+                string result = await view.CoreWebView2.ExecuteScriptAsync("(function(){var d=JSON.parse(localStorage.getItem('commStatsData_default'));return document.getElementById('totalComm').textContent==='1'&&document.getElementById('commCount').textContent==='1'&&document.getElementById('shiftStatusText').textContent==='Пауза'&&Object.keys(d.hours||{}).length===1&&!!d.pauseStart;})()");
                 Program.SmokeExitCode = result == "true" ? 0 : 1;
                 Close();
             }
@@ -262,6 +262,15 @@ internal sealed class CounterWindow : Form
                 if (!string.IsNullOrEmpty(text) && text.Length <= 200000) { Clipboard.SetDataObject(text, true, 5, 100); Notify("Отчёт скопирован"); }
             }
             else if (type == "update") Updater.Start(this);
+            else if (type == "attention")
+            {
+                // Напоминание о темпе: мигает кнопка на панели задач, пока окно не откроют.
+                if (WindowState == FormWindowState.Minimized || Form.ActiveForm != this)
+                {
+                    var info = new FlashInfo { Size = (uint)Marshal.SizeOf(typeof(FlashInfo)), Handle = Handle, Flags = 3 | 12 };
+                    FlashWindowEx(ref info);
+                }
+            }
             else if (type == "checkUpdate") Updater.Check(this, true);
             else if (type == "openReleases") Updater.OpenReleasesPage();
             else if (type == "saveFile" && data.ContainsKey("content") && data.ContainsKey("name"))
@@ -303,5 +312,8 @@ internal sealed class CounterWindow : Form
         catch (COMException) { }
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    private struct FlashInfo { public uint Size; public IntPtr Handle; public uint Flags; public uint Count; public uint Timeout; }
+    [DllImport("user32.dll")] private static extern bool FlashWindowEx(ref FlashInfo info);
     [DllImport("dwmapi.dll")] private static extern int DwmSetWindowAttribute(IntPtr handle, int attribute, ref int value, int size);
 }
