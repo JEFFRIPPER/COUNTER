@@ -34,7 +34,7 @@ async function session(url, options={}) {
   for(let i=0;i<2;i++)await row(page,'Успешно').locator('[data-action=plus]').click();
   for(let i=0;i<4;i++)await page.locator('#commPlus').click();
   check(await value(page,'totalComm')==='5'&&await value(page,'commCount')==='4','category total and independent communications');
-  check(await value(page,'effSuccess')==='40%','success ratio uses category total');
+  check(await value(page,'successCount')==='2','success metric counts the Успешно category');
   await row(page,'Успешно').locator('[data-action=menu]').click();await page.locator('#itemEditBtn').click(); await answer(page,7);
   check(await value(page,'totalComm')==='10','manual category edits adjust total');
   await page.locator('#undoBtn').click();

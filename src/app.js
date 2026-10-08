@@ -64,7 +64,7 @@ function updateTimer(){
   setText('slowHoursEl',rate===null?'Таймер не учитывает паузы':C.total(state)<=5?'Темп появится после первых коммуникаций':rate<15?'Темп ниже 15 коммуникаций / час':rate<20?'Темп: 15–20 коммуникаций / час':'Хороший темп: от 20 / час');
 }
 function render(){
-  const total=C.total(state);setText('totalComm',total,true);setText('commCount',state.commCount,true);setText('effSuccess',total?Math.round((state.counts['Успешно']||0)/total*1000)/10+'%':'0%');
+  const total=C.total(state);setText('totalComm',total,true);setText('commCount',state.commCount,true);setText('successCount',state.counts['Успешно']||0,true);
   setText('effProgressLabel','Цель · '+total+' / 140');const progress=Math.min(total/140*100,100);setText('effPercent',Math.round(progress)+'%');$('effProgressFill').style.width=progress+'%';$('goalProgress').setAttribute('aria-valuenow',Math.min(total,140));setText('effTarget',total>=140?'Цель выполнена. Отличная работа!':'Осталось '+(140-total)+' коммуникаций');
   $('commMinus').disabled=state.commCount===0;$('commPlus').disabled=state.commCount>=1e9;$('undoBtn').disabled=undoStates.length<2;
   for(const [id,value] of [['shiftStart',state.shiftStart],['shiftEnd',state.shiftEnd],['shiftNotes',state.notes]])if(document.activeElement!==$(id))$(id).value=value;
