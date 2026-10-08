@@ -30,7 +30,7 @@ async function session(url, options={}) {
   const {context,page,errors,external}=await session(url);
   await page.goto(url); await page.locator('.item-row').first().waitFor();
   check(await page.locator('.item-row').count()===2&&await page.locator('.item-name').allTextContents().then(n=>n.join()==='Звонки,Успешно'),'detail has only Звонки and Успешно');
-  check(await page.evaluate(()=>document.querySelector('.side-column').firstElementChild.classList.contains('detail-card')&&!!document.querySelector('.main-column .communications')),'communications on the left, detail at the top right');
+  check(await page.evaluate(()=>!!document.querySelector('.side-column .shift-card + .detail-card')&&!!document.querySelector('.main-column .communications')),'communications on the left, detail under the shift on the right');
   for(let i=0;i<5;i++)await row(page,'Звонки').locator('[data-action=plus]').click();
   for(let i=0;i<2;i++)await row(page,'Успешно').locator('[data-action=plus]').click();
   for(let i=0;i<4;i++)await page.locator('#commPlus').click();

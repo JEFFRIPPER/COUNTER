@@ -1,7 +1,7 @@
 {
   "name": "counter-v2",
   "private": true,
-  "version": "2.4.0",
+  "version": "2.4.1",
   "scripts": { "test": "node --test tests/core.test.cjs", "test:ui": "node tests/ui.cjs && node tests/ui.test.cjs" },
   "devDependencies": { "playwright": "1.58.2" }
 }
