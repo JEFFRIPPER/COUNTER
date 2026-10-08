@@ -123,8 +123,13 @@ function onUpdate(d){
     setText('updateVersion',d.version);setText('updateCurrent',String(d.current||''));setText('updateTitle','Доступно обновление');setText('updateMessage','Счётчик скачает новую версию, проверит её и перезапустится сам. Сохранённые данные не изменятся.');
     updateView('available');$('updateBtn').hidden=false;$('updateBtn').title='Установить версию '+d.version;if(!document.querySelector('dialog[open]'))showDialog('updateDialog');
   }else if(d.state==='progress'&&updateBusy){const p=Number(d.percent);updateView('progress',Number.isFinite(p)&&p>=0?Math.min(100,Math.round(p)):-1);}
+  else if(d.state==='latest')toast('Установлена последняя версия '+String(d.current||''));
+  else if(d.state==='check-failed')toast('Не удалось проверить обновления: нет связи с GitHub',4000);
   else if(d.state==='error'){setText('updateTitle','Не удалось обновить');setText('updateMessage',String(d.message||'Неизвестная ошибка')+'\n\nМожно повторить или скачать новую версию вручную со страницы релизов.');updateView('error');if(!document.querySelector('dialog[open]'))showDialog('updateDialog');if($('updateDialog').open)$('updateNowBtn').focus();}
 }
+// Проверка по кнопке: без перезапуска программы.
+if(window.chrome?.webview){$('updatesSection').hidden=false;$('updatesActions').hidden=false;}
+$('checkUpdateBtn').onclick=()=>{$('settingsDialog').close();if(updateBusy){showDialog('updateDialog');return;}toast('Проверяем обновления…');window.chrome?.webview?.postMessage({type:'checkUpdate'});};
 $('updateBtn').onclick=()=>{if(!$('updateDialog').open)showDialog('updateDialog');if(!updateBusy)$('updateNowBtn').focus();};
 $('updateNowBtn').onclick=()=>{if(updateBusy||!window.chrome?.webview)return;setText('updateTitle','Обновляем счётчик');setText('updateMessage','Окно можно скрыть и работать дальше. После загрузки счётчик перезапустится сам, данные сохранятся.');updateView('progress',-1);window.chrome.webview.postMessage({type:'update'});};
 $('updateLaterBtn').onclick=()=>$('updateDialog').close();
