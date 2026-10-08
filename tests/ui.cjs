@@ -30,7 +30,7 @@ async function session(url, options={}) {
   const {context,page,errors,external}=await session(url);
   await page.goto(url); await page.locator('.item-row').first().waitFor();
   check(await page.locator('.item-row').count()===2&&await page.locator('.item-name').allTextContents().then(n=>n.join()==='Звонки,Успешно'),'detail has only Звонки and Успешно');
-  check(await page.evaluate(()=>!!document.querySelector('.side-column .detail-card')&&!!document.querySelector('.main-column .communications')),'communications on the left, detail on the right');
+  check(await page.evaluate(()=>document.querySelector('.side-column').firstElementChild.classList.contains('detail-card')&&!!document.querySelector('.main-column .communications')),'communications on the left, detail at the top right');
   for(let i=0;i<5;i++)await row(page,'Звонки').locator('[data-action=plus]').click();
   for(let i=0;i<2;i++)await row(page,'Успешно').locator('[data-action=plus]').click();
   for(let i=0;i<4;i++)await page.locator('#commPlus').click();
@@ -100,7 +100,7 @@ async function session(url, options={}) {
   await legacy.context.close();
   if(process.env.COUNTER_TEST_SINGLE_PROCESS){await browser.close();browser=await chromium.launch({headless:true,args:['--no-sandbox','--single-process','--no-zygote','--disable-gpu'],executablePath:process.env.COUNTER_BROWSER});}
   const upgrade=await session(url);
-  await upgrade.page.addInitScript(()=>{if(!localStorage.getItem('seeded')){localStorage.setItem('seeded','1');const old=['НДЗ','Перезвон','Успешно','Отказ','VIP','Блокировка','Сам','Трансфер'];localStorage.setItem('commProfiles',JSON.stringify({default:{itemOrder:old,items:[],history:[{date:'2026-10-07T18:00:00.000Z',total:3,comm:1,duration:1000,itemOrder:old,counts:{НДЗ:3}}]},Своя:{itemOrder:['Моя','НДЗ'],items:[],history:[]}}));localStorage.setItem('commStatsData_default',JSON.stringify({counts:{НДЗ:20,Перезвон:4,Успешно:6,Отказ:5},commCount:7,status:'Пауза',startTime:'2026-10-08T06:00:00.000Z',pauseStart:'2026-10-08T07:00:00.000Z',pausedTotal:0,shiftStart:'09:00',shiftEnd:'18:00',notes:'смена'}));localStorage.setItem('commStatsData_Своя',JSON.stringify({counts:{Моя:2,НДЗ:1}}));localStorage.setItem('commLastProfile','default');}});
+  await upgrade.page.addInitScript(()=>{if(!localStorage.getItem('seeded')){localStorage.setItem('seeded','1');const old=['НДЗ','Перезвон','Успешно','Отказ','VIP','Блокировка','Сам','Трансфер'];localStorage.setItem('commProfiles',JSON.stringify({default:{itemOrder:old,items:[],history:[{date:'2026-10-07T18:00:00.000Z',total:3,comm:1,duration:1000,itemOrder:old,counts:{НДЗ:3}}]},Своя:{itemOrder:['Моя','НДЗ'],items:[],history:[]},Анна:{items:['Моя'],history:[]}}));localStorage.setItem('commStatsData_Анна',JSON.stringify({counts:{НДЗ:10,Отказ:3,Успешно:4,Моя:2}}));localStorage.setItem('commStatsData_default',JSON.stringify({counts:{НДЗ:20,Перезвон:4,Успешно:6,Отказ:5},commCount:7,status:'Пауза',startTime:'2026-10-08T06:00:00.000Z',pauseStart:'2026-10-08T07:00:00.000Z',pausedTotal:0,shiftStart:'09:00',shiftEnd:'18:00',notes:'смена'}));localStorage.setItem('commStatsData_Своя',JSON.stringify({counts:{Моя:2,НДЗ:1}}));localStorage.setItem('commLastProfile','default');}});
   await upgrade.page.goto(url);
   check(await upgrade.page.locator('.item-name').allTextContents().then(n=>n.join()==='Звонки,Успешно')&&await row(upgrade.page,'Звонки').locator('.item-count').textContent()==='35'&&await row(upgrade.page,'Успешно').locator('.item-count').textContent()==='6'&&await value(upgrade.page,'totalComm')==='35','old categories become Звонки (their sum) and Успешно');
   check(await value(upgrade.page,'shiftStatusText')==='Пауза'&&await value(upgrade.page,'shiftTimerValue')==='01:00:00'&&await value(upgrade.page,'commCount')==='7'&&await upgrade.page.locator('#shiftNotes').inputValue()==='смена','shift, timer, communications and notes survive the upgrade');
@@ -108,6 +108,10 @@ async function session(url, options={}) {
   check(await row(upgrade.page,'Звонки').locator('.item-count').textContent()==='35','migration runs once and persists');
   await upgrade.page.locator('#profileSelect').selectOption('Своя');
   check(await upgrade.page.locator('.item-name').allTextContents().then(n=>n.join()==='Моя,НДЗ'),'custom categories are left untouched');
+  await upgrade.page.locator('#profileSelect').selectOption('Анна');
+  check(await upgrade.page.locator('.item-row').count()===9&&await row(upgrade.page,'НДЗ').locator('.item-count').textContent()==='10'&&await row(upgrade.page,'Моя').locator('.item-count').textContent()==='2','old-format profile with own categories keeps all counts');
+  await upgrade.page.locator('#profileSelect').selectOption('default');await upgrade.page.locator('#historyBtn').click();await upgrade.page.locator('.history-item').first().click();await upgrade.page.locator('#dialogConfirm').click();
+  check(await upgrade.page.locator('.item-name').allTextContents().then(n=>n.join()==='Звонки,Успешно')&&await row(upgrade.page,'Звонки').locator('.item-count').textContent()==='3','loading a pre-2.4 shift from history converts it to Звонки');
   check(upgrade.errors.length===0,'upgrade has no JavaScript errors');
   await upgrade.context.close();
   const native=await session(url);

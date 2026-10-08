@@ -72,6 +72,10 @@
       </div>
     </div>
     <div class="side-column">
+      <section class="card detail-card" aria-labelledby="detailsTitle">
+        <div class="card-header"><h2 id="detailsTitle">Детализация</h2><button id="addBtn"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Категория</button></div>
+        <div id="itemsContainer"></div>
+      </section>
       <section class="card shift-card" aria-labelledby="shiftTitle">
         <div class="card-header"><h2 id="shiftTitle">Смена</h2><span class="status" id="shiftStatus" data-state="Не начата"><span class="status-dot"></span><span id="shiftStatusText">Не начата</span></span></div>
         <div class="timer" id="shiftTimerValue">00:00:00</div><div class="remaining" id="shiftRemainingValue">Осталось 08:00:00</div>
@@ -83,10 +87,6 @@
         <div class="schedule"><label class="field">Начало<input type="time" id="shiftStart" aria-label="Время начала смены"></label><label class="field">Конец по расписанию<input type="time" id="shiftEnd" aria-label="Время конца смены"></label></div>
         <label class="field notes-field">Заметки<textarea id="shiftNotes" placeholder="Что важно не забыть…" maxlength="2000"></textarea></label>
         <div class="rate-note" id="slowHoursEl"></div>
-      </section>
-      <section class="card detail-card" aria-labelledby="detailsTitle">
-        <div class="card-header"><h2 id="detailsTitle">Детализация</h2><button id="addBtn"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Категория</button></div>
-        <div id="itemsContainer"></div>
       </section>
       <button id="historyBtn" class="tonal"><svg class="icon" aria-hidden="true"><use href="#i-history"/></svg>История смен</button>
     </div>
