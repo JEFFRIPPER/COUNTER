@@ -215,6 +215,57 @@ $('hotkeyPreview').addEventListener('keydown',e=>{if(e.key==='Escape'||e.key==='
 function saveHotkey(k){hotkeys[hotkeyEdit]=k;write('counterHotkeys',JSON.stringify(hotkeys));hotkeyEdit=null;$('hotkeyDialog').close();renderHotkeys();toast(k?'Сочетание сохранено: '+keyLabel(k):'Горячая клавиша отключена');}
 $('hotkeySaveBtn').onclick=()=>{if(hotkeyDraft)saveHotkey(hotkeyDraft);};$('hotkeyOffBtn').onclick=()=>saveHotkey(null);$('hotkeyCancelBtn').onclick=()=>$('hotkeyDialog').close();
 $('hotkeyDialog').addEventListener('close',()=>sendHotkeys(true));
+// «ИНФО БК»: поиск по регламенту. Регламент внутренний, поэтому в программу он не встроен:
+// базу (JSON) загружают из файла один раз, она хранится только на этом компьютере.
+let info=null,infoSection='';
+const str=(x,max)=>typeof x==='string'&&x.trim()&&x.length<=max?x:null;
+function validInfo(d){
+  if(!d||d.schema!=='counter-info-1'||!Array.isArray(d.sections)||!d.sections.length||d.sections.length>100)return null;
+  const sections=[];let count=0;
+  for(const sec of d.sections){
+    const title=str(sec&&sec.title,120);if(!title||!Array.isArray(sec.items)||sec.items.length>500)return null;const items=[];
+    for(const x of sec.items){const q=str(x&&x.q,300),a=str(x&&x.a,8000);if(!q||!a)return null;
+      const tags=(Array.isArray(x.tags)?x.tags:[]).map(t=>str(t,60)).filter(Boolean).slice(0,40),links=(Array.isArray(x.links)?x.links:[]).filter(l=>l&&str(l.title,120)&&str(l.url,2000)&&/^https:\/\//i.test(l.url)).slice(0,10).map(l=>({title:l.title,url:l.url}));
+      items.push({q,a,tags,links,section:title});}
+    count+=items.length;sections.push({title,items});
+  }
+  return count?{title:str(d.title,200)||'ИНФО БК',version:str(d.version,40)||'',sections}:null;
+}
+const fold=t=>t.toLowerCase().replace(/ё/g,'е');
+function infoResults(query){
+  const words=fold(query).split(/[\s,.;:!?«»"()]+/).filter(Boolean).slice(0,8),out=[];
+  for(const sec of info.sections){if(infoSection&&sec.title!==infoSection)continue;for(const x of sec.items){
+    const head=fold(x.q+' '+x.tags.join(' ')),all=head+' '+fold(x.a+' '+x.section);if(!words.every(w=>all.includes(w)))continue;
+    out.push({x,score:words.reduce((n,w)=>n+(x.tags.some(t=>fold(t)===w)?6:head.includes(w)?3:1),0)});}}
+  return {words,list:words.length?out.sort((a,b)=>b.score-a.score):out};
+}
+// Подсветка совпадений: текст вставляется узлами, не HTML.
+function highlight(el,text,words){
+  const low=fold(text);let i=0;
+  while(i<text.length){let at=-1,len=0;for(const w of words){const j=low.indexOf(w,i);if(j>=0&&(at<0||j<at||j===at&&w.length>len)){at=j;len=w.length;}}
+    if(at<0){el.append(text.slice(i));break;}if(at>i)el.append(text.slice(i,at));const m=document.createElement('mark');m.textContent=text.slice(at,at+len);el.append(m);i=at+len;}
+}
+function openLink(url){if(window.chrome?.webview)window.chrome.webview.postMessage({type:'openUrl',url});else window.open(url,'_blank','noopener');}
+function renderInfo(){
+  const list=$('infoList'),chips=$('infoChips');list.replaceChildren();
+  if(!info){chips.replaceChildren();setText('infoSubtitle','Поиск по регламенту');setText('infoCount','');const empty=cell('div','База ещё не загружена. Загрузи файл базы ИНФО БК (COUNTER_INFO_BK.json), это нужно сделать один раз.','info-empty'),b=cell('button','Загрузить файл базы','filled');b.type='button';b.onclick=()=>$('infoFile').click();empty.append(document.createElement('br'),b);list.append(empty);return;}
+  setText('infoSubtitle',info.title+(info.version?' · '+info.version:''));
+  if(!chips.children.length){for(const title of ['',...info.sections.map(s=>s.title)]){const b=cell('button',title||'Все');b.type='button';b.dataset.section=title;b.onclick=()=>{infoSection=title;renderInfo();};chips.append(b);}}
+  for(const b of chips.children)b.setAttribute('aria-pressed',b.dataset.section===infoSection);
+  const {words,list:found}=infoResults($('infoSearch').value);setText('infoCount',words.length||infoSection?'Найдено: '+found.length:'Всего: '+found.length);
+  if(!found.length){list.append(cell('div','Ничего не нашлось. Попробуй другое слово: статус счёта, продукт или ситуацию.','info-empty'));return;}
+  for(const {x} of found.slice(0,150)){
+    const item=document.createElement('details'),summary=document.createElement('summary'),title=document.createElement('strong'),answer=document.createElement('div');
+    item.className='info-item';item.open=!!words.length&&found.length<=3;summary.append(cell('small',x.section),title);highlight(title,x.q,words);answer.className='info-answer';highlight(answer,x.a,words);item.append(summary,answer);
+    if(x.links.length){const links=document.createElement('div');links.className='info-links';for(const l of x.links){const b=document.createElement('button');b.type='button';b.innerHTML=icon('link');b.append(l.title);b.title=l.url;b.onclick=()=>openLink(l.url);links.append(b);}item.append(links);}
+    list.append(item);
+  }
+}
+function openInfo(){if(document.querySelector('dialog[open]'))return;$('infoSearch').value='';infoSection='';renderInfo();showDialog('infoDialog');$('infoSearch').focus();}
+$('infoBtn').onclick=openInfo;$('infoCloseBtn').onclick=()=>$('infoDialog').close();$('infoLoadBtn').onclick=()=>$('infoFile').click();
+$('infoSearch').addEventListener('input',renderInfo);
+$('infoFile').onchange=async()=>{const file=$('infoFile').files[0];$('infoFile').value='';if(!file)return;try{if(file.size>2e6)throw Error('big');const next=validInfo(JSON.parse(await file.text()));if(!next)throw Error('format');if(!write('counterInfo',JSON.stringify({schema:'counter-info-1',...next})))throw Error('storage');info=next;$('infoChips').replaceChildren();infoSection='';renderInfo();toast('База ИНФО БК загружена: '+next.sections.reduce((n,s)=>n+s.items.length,0)+' ответов');}catch{toast('Не удалось загрузить базу. Нужен файл COUNTER_INFO_BK.json.',5000);}};
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.code==='KeyF'&&!mini){e.preventDefault();if($('infoDialog').open)$('infoSearch').select();else openInfo();}});
 // Мини-окно: программа делает окно маленьким и поверх всех; здесь — компактный вид с главными цифрами и кнопками.
 function setMini(on){mini=!!on;document.documentElement.dataset.mini=mini?'1':'0';$('miniPanel').hidden=!mini;}
 $('miniBtn').onclick=()=>{setMini(true);window.chrome?.webview?.postMessage({type:'mini',on:true});};
@@ -241,6 +292,6 @@ if(!read('commCallsMigrated',false)){
   }
   write('commProfiles',JSON.stringify(profiles));write('commCallsMigrated','true');
 }
-let last;try{last=localStorage.getItem('commLastProfile');sound=localStorage.getItem('counterSound')==='on';paceOn=localStorage.getItem('counterPace')!=='off';const savedKeys=read('counterHotkeys',null);if(savedKeys&&typeof savedKeys==='object')for(const a of Object.keys(hotkeyNames))if(own(savedKeys,a)&&validKey(savedKeys[a]))hotkeys[a]=savedKeys[a];applyEffects(localStorage.getItem('counterEffects'));applyTheme(localStorage.getItem('commStatsTheme')==='light'?'light':'dark');}catch{applyEffects('auto');applyTheme('dark');}renderSound();renderPace();renderHotkeys();if(window.chrome?.webview)sendHotkeys(true);switchProfile(own(profiles,last)?last:Object.keys(profiles)[0]);
+let last;try{last=localStorage.getItem('commLastProfile');sound=localStorage.getItem('counterSound')==='on';paceOn=localStorage.getItem('counterPace')!=='off';info=validInfo(read('counterInfo',null));const savedKeys=read('counterHotkeys',null);if(savedKeys&&typeof savedKeys==='object')for(const a of Object.keys(hotkeyNames))if(own(savedKeys,a)&&validKey(savedKeys[a]))hotkeys[a]=savedKeys[a];applyEffects(localStorage.getItem('counterEffects'));applyTheme(localStorage.getItem('commStatsTheme')==='light'?'light':'dark');}catch{applyEffects('auto');applyTheme('dark');}renderSound();renderPace();renderHotkeys();if(window.chrome?.webview)sendHotkeys(true);switchProfile(own(profiles,last)?last:Object.keys(profiles)[0]);
 setInterval(()=>{updateTimer();if(Date.now()-lastPaceCheck>=60000){lastPaceCheck=Date.now();checkPace();}if(['Идёт','Пауза'].includes(state.status)){const end=C.scheduledEnd(state);if(end!==null&&Date.now()>=end&&end!==skipAutoFinish)finishShift(true,end);}},1000);
 })();
