@@ -280,6 +280,13 @@ internal sealed class CounterWindow : Form
             }
             else if (type == "checkUpdate") Updater.Check(this, true);
             else if (type == "openReleases") Updater.OpenReleasesPage();
+            else if (type == "openUrl" && data.ContainsKey("url"))
+            {
+                // Ссылки из базы «ИНФО БК» открываются в браузере; только https.
+                string url = data["url"] as string;
+                Uri uri;
+                if (url != null && url.Length <= 2000 && Uri.TryCreate(url, UriKind.Absolute, out uri) && uri.Scheme == Uri.UriSchemeHttps) System.Diagnostics.Process.Start(uri.AbsoluteUri);
+            }
             else if (type == "saveFile" && data.ContainsKey("content") && data.ContainsKey("name"))
             {
                 string name = Path.GetFileName(data["name"] as string);
